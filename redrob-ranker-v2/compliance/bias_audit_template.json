@@ -1,0 +1,14 @@
+{
+  "_description": "Template describing the bias-audit record emitted per ranking run. The live values are written into compliance/audit_trail/audit_<timestamp>.json by src/compliance.py.",
+  "run_timestamp_utc": "<filled at runtime>",
+  "protected_and_proxy_attributes_audited": ["region", "institution_tier"],
+  "attributes_explicitly_NOT_used_for_scoring": ["gender", "name", "anonymized_name"],
+  "metric": "disparate_impact_ratio (min selection-rate / max selection-rate)",
+  "four_fifths_threshold": 0.8,
+  "intervention_policy": "Audit-and-log by default (no forced re-rank). Bounded DELTR-style adjustment available in production where legal parity is mandated.",
+  "example_report": {
+    "region": {"disparate_impact_ratio": 0.0, "passes_four_fifths": false, "groups": {}},
+    "institution_tier": {"disparate_impact_ratio": 0.0, "passes_four_fifths": false, "groups": {}}
+  },
+  "notes": "A region skew toward India is expected and lawful for this JD (it targets Pune/Noida + Tier-1 Indian cities). The audit records rather than masks it."
+}

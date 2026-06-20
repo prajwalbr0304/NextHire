@@ -1,0 +1,83 @@
+{
+  "role_title": "Senior AI Engineer — Founding Team",
+  "company": "Redrob AI (Series A, AI-native talent intelligence)",
+  "_comment": "Structured interpretation of job_description.docx. Static artifact so the ranking step needs NO network/LLM at run time. Each field maps to a Council-of-Nine scorer.",
+
+  "query_text": "Senior AI Engineer with production experience building embeddings-based retrieval, hybrid search, semantic search, vector databases, ranking systems, recommendation systems, and learning-to-rank at product companies. Strong Python. Has shipped end-to-end search, ranking or recommendation systems to real users at scale. Understands retrieval evaluation NDCG MRR MAP, dense retrieval, BM25, re-ranking, LLM fine-tuning LoRA. Information retrieval and NLP background. Not pure research, not framework tutorials, not services-only consulting.",
+
+  "must_have_capabilities": [
+    "embeddings", "embedding", "retrieval", "semantic search", "vector database",
+    "vector search", "hybrid search", "ranking", "learning to rank", "recommendation",
+    "recommender", "recsys", "information retrieval", "search engine", "nlp",
+    "natural language processing", "rag", "fine-tuning", "fine tuning", "llm",
+    "machine learning", "deep learning", "python", "pytorch", "transformers",
+    "sentence-transformers", "bert", "neural network", "ml pipeline", "mlops",
+    "faiss", "pinecone", "weaviate", "qdrant", "milvus", "elasticsearch",
+    "opensearch", "bge", "e5", "ndcg", "mrr", "embedding model"
+  ],
+
+  "nice_to_have": [
+    "lora", "qlora", "peft", "xgboost", "lambdamart", "distributed systems",
+    "large-scale inference", "open source", "hr-tech", "marketplace",
+    "a/b testing", "evaluation framework", "spark", "airflow", "kafka"
+  ],
+
+  "evidence_phrases": [
+    "built", "shipped", "deployed", "designed", "architected", "developed",
+    "led", "owned", "scaled", "in production", "production system", "real users",
+    "served", "launched", "implemented", "optimized", "trained", "fine-tuned",
+    "recommendation system", "search system", "ranking system", "retrieval system",
+    "matching system", "embedding", "vector", "pipeline", "model", "improved",
+    "increased", "reduced latency", "at scale", "million", "throughput"
+  ],
+
+  "positive_titles": [
+    "ai engineer", "ml engineer", "machine learning engineer", "data scientist",
+    "research engineer", "software engineer", "backend engineer", "search engineer",
+    "ranking engineer", "applied scientist", "nlp engineer", "full stack",
+    "fullstack", "full-stack", "data engineer", "platform engineer",
+    "staff engineer", "principal engineer", "founding engineer", "developer",
+    "deep learning engineer", "computer vision engineer"
+  ],
+
+  "negative_titles": [
+    "hr manager", "human resources", "recruiter", "talent acquisition",
+    "marketing manager", "content writer", "copywriter", "graphic designer",
+    "sales executive", "sales manager", "business development", "accountant",
+    "operations manager", "customer support", "civil engineer",
+    "mechanical engineer", "project manager", "business analyst",
+    "office manager", "administrator", "teacher", "nurse", "chef"
+  ],
+
+  "product_industries": [
+    "software", "saas", "ai/ml", "ai", "fintech", "e-commerce", "ecommerce",
+    "food delivery", "edtech", "internet", "technology", "product"
+  ],
+
+  "services_companies": [
+    "tcs", "tata consultancy", "infosys", "wipro", "accenture", "cognizant",
+    "capgemini", "tech mahindra", "hcl", "mindtree", "ltimindtree",
+    "larsen", "mphasis", "hexaware", "birlasoft", "deloitte", "kpmg", "pwc",
+    "ernst", "ey", "igate", "syntel", "dxc"
+  ],
+
+  "offdomain_skills": [
+    "image classification", "object detection", "computer vision", "opencv",
+    "speech recognition", "tts", "text to speech", "robotics", "ros",
+    "autonomous", "gans", "image segmentation", "photoshop", "tailwind",
+    "figma", "illustrator", "video editing"
+  ],
+
+  "ir_nlp_skills": [
+    "nlp", "information retrieval", "retrieval", "embeddings", "search",
+    "ranking", "recommendation", "transformers", "bert", "llm",
+    "fine-tuning", "rag", "semantic", "milvus", "faiss", "vector"
+  ],
+
+  "preferred_locations": [
+    "pune", "noida", "hyderabad", "mumbai", "delhi", "gurgaon", "gurugram",
+    "bangalore", "bengaluru", "ncr", "india"
+  ],
+
+  "experience": { "required_low": 5, "required_high": 9, "ideal_low": 6, "ideal_high": 8 }
+}

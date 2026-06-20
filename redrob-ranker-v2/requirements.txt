@@ -1,0 +1,21 @@
+# Redrob Ranker v2.0 — core runtime dependencies (CPU-only, offline at rank time)
+# Pinned to the versions validated on the development machine (Python 3.13).
+numpy>=1.26,<3
+scipy>=1.11
+scikit-learn>=1.4
+orjson>=3.9
+PyYAML>=6.0
+
+# --- Optional upgrades from the blueprint (NOT required to run rank.py) ---
+# Uncomment to enable the heavier 2026 backends described in the blueprint.
+# These run only during the OFFLINE precompute step (network allowed there).
+#
+# sentence-transformers>=3.0      # Nomic Embed v1.5 / BGE / E5 dense backend
+# transformers>=4.44              # Qwen3-Reranker neural re-ranking
+# onnxruntime>=1.18               # INT8-quantized CPU inference (2-3x speedup)
+# xgboost>=2.1                    # LambdaMART learning-to-rank fusion
+# faiss-cpu>=1.8                  # approximate nearest-neighbour index
+# polars>=1.0                     # faster feature engineering at scale
+#
+# --- Demo / sandbox only ---
+# streamlit>=1.30                 # hosted sandbox demo (app.py)

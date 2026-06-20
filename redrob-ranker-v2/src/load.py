@@ -1,0 +1,57 @@
+"""
+Stage [0a] — Data loading.
+
+Streams the 100K-candidate JSONL pool with the fastest available JSON parser
+(orjson if present, else stdlib json). Returns plain Python dicts so every
+downstream module stays dependency-light and CPU-only.
+"""
+from __future__ import annotations
+
+import gzip
+import io
+import os
+from typing import Iterator, List
+
+try:
+    import orjson as _json
+
+    def _loads(b):
+        return _json.loads(b)
+except Exception:  # pragma: no cover - fallback
+    import json as _json
+
+    def _loads(b):
+        return _json.loads(b)
+
+
+def _open_any(path: str):
+    """Open a plain or gzipped JSONL file transparently."""
+    if path.endswith(".gz"):
+        return io.TextIOWrapper(gzip.open(path, "rb"), encoding="utf-8")
+    return open(path, "r", encoding="utf-8")
+
+
+def iter_candidates(path: str) -> Iterator[dict]:
+    """Yield candidate dicts one at a time (memory-friendly)."""
+    with _open_any(path) as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                yield _loads(line)
+            except Exception:
+                # be robust to a stray malformed line rather than crash a 5-min run
+                continue
+
+
+def load_candidates(path: str, limit: int | None = None) -> List[dict]:
+    """Load all (or the first `limit`) candidates into a list."""
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Candidate file not found: {path}")
+    out: List[dict] = []
+    for i, c in enumerate(iter_candidates(path)):
+        out.append(c)
+        if limit is not None and len(out) >= limit:
+            break
+    return out

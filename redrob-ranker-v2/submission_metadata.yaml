@@ -1,0 +1,72 @@
+# Redrob Hackathon — Submission Metadata (Redrob Ranker v2.0)
+
+team_name: "Council-of-Nine"
+
+primary_contact:
+  name: "Full Name"
+  email: "primary@example.com"
+  phone: "+91-XXXXXXXXXX"
+
+team_members:
+  - name: "Member 1 Full Name"
+    email: "member1@example.com"
+    role: "ML Engineer / Team Lead"
+
+# ============================================================================
+# Code and reproducibility
+# ============================================================================
+github_repo: "https://github.com/YOUR_USERNAME/redrob-ranker-v2"
+sandbox_link: "https://huggingface.co/spaces/YOUR_USERNAME/redrob-ranker"
+reproduce_command: "python rank.py --candidates ./candidates.jsonl --out ./submission.csv"
+
+# ============================================================================
+# Compute environment
+# ============================================================================
+compute:
+  platform: "Local Windows box (Intel CPU)"
+  cpu_cores: 8
+  ram_gb: 16
+  python_version: "3.13"
+  os: "Windows 10/11"
+  uses_gpu_for_inference: false        # CPU only
+  has_network_during_ranking: false    # no API calls during ranking
+  pre_computation_required: false       # rank.py runs standalone in ~90s on 100K
+  pre_computation_time_minutes: 0
+
+# ============================================================================
+# AI tools declaration (transparency only — not penalised)
+# ============================================================================
+ai_tools_used:
+  - "Cursor"
+  - "Claude"
+
+ai_usage_summary: |
+  Used AI assistants for architecture discussion, code review and drafting.
+  All ranking logic (the Council of Nine, integrity layer, behavioural modifier,
+  grounded reasoning) is original engineering. No candidate data was sent to any
+  hosted LLM, and the ranking step makes zero network calls.
+
+# ============================================================================
+# Approach summary
+# ============================================================================
+methodology_summary: |
+  A "Council of Nine" (Navaratna) ensemble: nine interpretable sub-scorers, each
+  mapping a strategic-judgement principle to a measurable feature. Career evidence
+  and role identity dominate; the self-declared skills list is deliberately
+  down-weighted and gated by an endorsement x duration x assessment trust factor
+  (anti keyword-stuffer). A conservative integrity layer floors logically
+  impossible honeypots; a bounded behavioural-availability modifier separates
+  engaged from dormant twins. Hybrid retrieval (TF-IDF lexical + LSA dense, RRF
+  fused) builds the shortlist; the LSA/lexical backend swaps cleanly for Nomic
+  Embed / SPLADE / Qwen3 per the blueprint. Reasoning is fact-grounded and
+  rank-calibrated. Runs CPU-only, offline, in ~90s on the full 100K pool.
+
+# ============================================================================
+# Declarations
+# ============================================================================
+declarations:
+  read_submission_spec: true
+  code_is_original_work: true
+  no_collusion: true
+  honeypot_check_done: true
+  reproduction_tested: true

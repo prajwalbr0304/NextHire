@@ -1,0 +1,18 @@
+# Streamlit configuration for the AI Recruiting Brain dashboard.
+
+[server]
+# Lift the default 200 MB upload cap so large candidate pools can be uploaded.
+# 50000 MB (~50 GB) effectively removes the limit for any realistic file.
+maxUploadSize = 50000
+maxMessageSize = 50000
+
+[theme]
+base = "dark"
+primaryColor = "#06b6d4"
+backgroundColor = "#050d1a"
+secondaryBackgroundColor = "#0d1b2e"
+textColor = "#e2e8f0"
+font = "sans serif"
+
+[browser]
+gatherUsageStats = false
