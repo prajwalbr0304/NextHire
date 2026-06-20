@@ -164,7 +164,7 @@ weights_tuple = (round(w_semantic, 3), round(w_name, 3), round(w_evidence, 3),
 # ---------------------------------------------------------------------------
 # Cached parsing + ranking (so pagination / export do NOT recompute)
 # ---------------------------------------------------------------------------
-@st.cache_data(show_spinner=False, max_entries=4)
+@st.cache_resource(show_spinner=False, max_entries=2)
 def parse_candidates(raw: bytes):
     text = raw.decode("utf-8", errors="ignore").strip()
     if text.startswith("["):
@@ -172,7 +172,7 @@ def parse_candidates(raw: bytes):
     return [json.loads(l) for l in text.splitlines() if l.strip()]
 
 
-@st.cache_data(show_spinner="Ranking the full candidate pool ...", max_entries=4)
+@st.cache_resource(show_spinner="Ranking the full candidate pool ...", max_entries=2)
 def rank_all(raw: bytes, role_name, weights_tuple, yoe_ideal, yoe_ok,
              notice_pref, enable_integrity, enable_avail):
     candidates = parse_candidates(raw)
@@ -382,6 +382,8 @@ if raw_bytes:
                        "Click any candidate to expand full details.")
 
         start = (page - 1) * page_size
+        # Lightweight rendering: each card body is ONE HTML block (not ~20 widgets),
+        # so 100 expanders per page stay fast and never starve the other tabs.
         for offset, (score, c, f, dec, integ) in enumerate(ranked[start:start + page_size]):
             rank = start + offset + 1
             p = c.get("profile", {})
@@ -396,55 +398,53 @@ if raw_bytes:
                 badges.append("🏢 Product Co.")
             if f["location_match"]:
                 badges.append("📍 Location Match")
-            badges.append(("🕒 Active" if f["days_inactive"] <= 30
-                           else f"💤 Inactive ~{f['days_inactive']}d"))
-            badges.append((f"⏱ Notice {int(f['notice_days'])}d"))
+            badges.append("🕒 Active" if f["days_inactive"] <= 30
+                          else f"💤 Inactive ~{f['days_inactive']}d")
+            badges.append(f"⏱ Notice {int(f['notice_days'])}d")
             badge_str = "  ·  ".join(badges)
 
+            bars = "".join(
+                make_html_progress(
+                    k.replace("_", " ").title(), v,
+                    ("linear-gradient(90deg,#fb7185,#ef4444)" if v < 0.25
+                     else "linear-gradient(90deg,#fcd34d,#f59e0b)" if v < 0.6
+                     else "linear-gradient(90deg,#34d399,#10b981)"))
+                for k, v in dec["parts"].items())
+            rats = "".join(
+                f"<div style='font-size:12px;margin-bottom:3px;color:#cbd5e1;'>"
+                f"<strong style='color:#94a3b8;'>{sn.replace('_',' ').title()}:</strong> {rm}</div>"
+                for sn, rm in dec["rationales"].items())
+            vsk = verified_relevant_skills(c, jd, top=12)
+            vsk_html = (" ".join(f"<span class='tech-pill tech-pill-pos'>{s}</span>" for s in vsk)
+                        if vsk else "<em>none verified</em>")
+            all_sk = " ".join(f"<span class='tech-pill'>{s.get('name')}</span>"
+                              for s in c.get("skills", []))
+            timeline = "".join(
+                f"<div style='margin-bottom:6px;'>💼 <strong>{r.get('title')}</strong> at "
+                f"<em>{r.get('company')}</em> ({r.get('duration_months')} mo)<br>"
+                f"<small style='color:#64748b;'>{r.get('start_date')} → "
+                f"{r.get('end_date') or 'Present'} | {r.get('description')}</small></div>"
+                for r in c.get("career_history", []))
+            edu = "; ".join(
+                f"{e.get('degree')} {e.get('field_of_study')} — {e.get('institution')} "
+                f"(tier: {e.get('tier','?')})" for e in c.get("education", [])) or "—"
+
+            body = f"""
+            <div style='color:#94a3b8;font-size:12px;margin-bottom:8px;'>{badge_str}</div>
+            <div class='reasoning-box'><strong>Grounded Reasoning:</strong> {reasoning}</div>
+            <div style='display:grid;grid-template-columns:1fr 1fr;gap:18px;'>
+              <div><div style='font-size:13px;font-weight:600;color:#a78bfa;margin-bottom:6px;'>Council of Nine Scores</div>{bars}</div>
+              <div><div style='font-size:13px;font-weight:600;color:#67e8f9;margin-bottom:6px;'>Strategic Rationales</div>{rats}</div>
+            </div>
+            <hr style='border-color:rgba(148,163,184,.1);margin:12px 0;'>
+            <div style='font-size:13px;'><strong>Summary:</strong> {p.get('summary','')}</div>
+            <div style='margin-top:8px;'><strong style='font-size:13px;'>Verified Relevant Skills:</strong><br>{vsk_html}</div>
+            <div style='margin-top:8px;'><strong style='font-size:13px;'>All Listed Skills:</strong><br>{all_sk}</div>
+            <div style='margin-top:8px;'><strong style='font-size:13px;'>Education:</strong> {edu}</div>
+            <div style='margin-top:8px;'><strong style='font-size:13px;'>Career Timeline:</strong><br>{timeline}</div>
+            """
             with st.expander(f"#{rank}  ·  {title}  ·  Score {score*100:.0f}  ·  {cid}"):
-                st.markdown(f"<div style='color:#94a3b8;font-size:12px;margin-bottom:8px;'>{badge_str}</div>",
-                            unsafe_allow_html=True)
-                st.markdown(f"<div class='reasoning-box'><strong>Grounded Reasoning:</strong> {reasoning}</div>",
-                            unsafe_allow_html=True)
-
-                cb1, cb2 = st.columns(2)
-                with cb1:
-                    st.markdown("<div style='font-size:13px;font-weight:600;color:#a78bfa;margin-bottom:6px;'>Council of Nine Scores</div>", unsafe_allow_html=True)
-                    for k, v in dec["parts"].items():
-                        color = ("linear-gradient(90deg,#fb7185,#ef4444)" if v < 0.25
-                                 else "linear-gradient(90deg,#fcd34d,#f59e0b)" if v < 0.6
-                                 else "linear-gradient(90deg,#34d399,#10b981)")
-                        st.markdown(make_html_progress(k.replace("_", " ").title(), v, color),
-                                    unsafe_allow_html=True)
-                with cb2:
-                    st.markdown("<div style='font-size:13px;font-weight:600;color:#67e8f9;margin-bottom:6px;'>Strategic Rationales</div>", unsafe_allow_html=True)
-                    for sn, rm in dec["rationales"].items():
-                        st.markdown(f"<div style='font-size:12px;margin-bottom:4px;color:#cbd5e1;'><strong style='color:#94a3b8;'>{sn.replace('_',' ').title()}:</strong> {rm}</div>",
-                                    unsafe_allow_html=True)
-
-                st.markdown("---")
-                d1, d2 = st.columns(2)
-                with d1:
-                    st.markdown("**Profile**")
-                    st.json(p, expanded=False)
-                    st.markdown("**Education**")
-                    st.json(c.get("education"), expanded=False)
-                with d2:
-                    vsk = verified_relevant_skills(c, jd, top=12)
-                    st.markdown("**Verified Relevant Skills**")
-                    st.markdown(" ".join(f"<span class='tech-pill tech-pill-pos'>{s}</span>" for s in vsk)
-                                if vsk else "_None_", unsafe_allow_html=True)
-                    st.markdown("**All Listed Skills**")
-                    st.markdown(" ".join(f"<span class='tech-pill'>{s.get('name')}</span>"
-                                         for s in c.get("skills", [])), unsafe_allow_html=True)
-                    st.markdown("**Career Timeline**")
-                    for role in c.get("career_history", []):
-                        st.markdown(
-                            f"💼 **{role.get('title')}** at *{role.get('company')}* "
-                            f"({role.get('duration_months')} mo)<br>"
-                            f"<small style='color:#64748b;'>{role.get('start_date')} → "
-                            f"{role.get('end_date') or 'Present'} | {role.get('description')}</small>",
-                            unsafe_allow_html=True)
+                st.markdown(body, unsafe_allow_html=True)
 
     # ===================== TAB 2: analytics =====================
     with tab_charts:
@@ -521,19 +521,20 @@ if raw_bytes:
         if not enable_integrity:
             st.warning("Integrity Warden is disabled in the sidebar — no profiles are being filtered.")
         if honeypots:
-            st.markdown(f"**{len(honeypots)}** profiles flagged as logically impossible and excluded:")
-            for c, integ in honeypots[:300]:
-                p = c.get("profile", {})
-                st.markdown(f"""
+            show = honeypots[:60]
+            st.markdown(f"**{len(honeypots)}** profiles flagged as logically impossible "
+                        f"and excluded (showing first {len(show)}):")
+            cards = "".join(f"""
                 <div style="background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.2);
-                     border-radius:8px;padding:14px;margin-bottom:10px;">
+                     border-radius:8px;padding:12px;margin-bottom:8px;">
                   <span style="font-size:10px;font-weight:700;background:rgba(239,68,68,.2);
                         color:#fca5a5;padding:2px 8px;border-radius:4px;text-transform:uppercase;">Blocked</span>
-                  <div style="font-size:15px;font-weight:700;color:#fca5a5;margin-top:6px;">
-                     {p.get('current_title','N/A')} ({c.get('candidate_id')})</div>
+                  <div style="font-size:14px;font-weight:700;color:#fca5a5;margin-top:6px;">
+                     {(c.get('profile') or dict()).get('current_title','N/A')} ({c.get('candidate_id')})</div>
                   <div style="font-size:13px;color:#cbd5e1;margin-top:4px;">
                      <strong>Reason:</strong> {'; '.join(integ[2])}</div>
-                </div>""", unsafe_allow_html=True)
+                </div>""" for c, integ in show)
+            st.markdown(cards, unsafe_allow_html=True)
         else:
             st.info("No honeypots flagged in this pool.")
 
