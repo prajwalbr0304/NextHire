@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The AI Recruiting Brain — Strategy &amp; Implementation Blueprint</title>
+<style>
+  :root{
+    --ink:#10212b; --ink2:#33444f; --muted:#6b7a85;
+    --accent:#0b6e6e;        /* deep teal */
+    --accent2:#c8102e;       /* signal red (Redrob) */
+    --gold:#b8860b;
+    --bg:#ffffff; --soft:#f3f6f7; --line:#dde5e8;
+    --navy:#0f2233;
+  }
+  *{box-sizing:border-box;}
+  html{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  body{
+    font-family:"Segoe UI","Helvetica Neue",Arial,sans-serif;
+    color:var(--ink); margin:0; line-height:1.5; font-size:10.6pt;
+  }
+  h1,h2,h3,h4{ color:var(--navy); line-height:1.2; font-weight:700; }
+  h2{ font-size:20pt; border-bottom:3px solid var(--accent); padding-bottom:6px; margin:0 0 14px; }
+  h3{ font-size:14pt; color:var(--accent); margin:20px 0 8px; }
+  h4{ font-size:11.6pt; color:var(--ink); margin:14px 0 4px; }
+  p{ margin:0 0 9px; text-align:justify; }
+  a{ color:var(--accent); }
+  ul,ol{ margin:0 0 10px; padding-left:20px; }
+  li{ margin:0 0 5px; }
+  strong{ color:var(--navy); }
+  code{ background:var(--soft); padding:1px 5px; border-radius:4px; font-family:Consolas,monospace; font-size:9.2pt; color:#0a4d4d; }
+
+  /* page setup */
+  @page{ size:A4; margin:18mm 16mm 20mm; }
+  .page{ page-break-after:always; }
+  .nobreak{ page-break-inside:avoid; }
+
+  /* COVER */
+  .cover{
+    height:262mm; position:relative; color:#fff; padding:0;
+    background:linear-gradient(150deg,#06363b 0%,#0b6e6e 45%,#0f2233 100%);
+    page-break-after:always; overflow:hidden;
+  }
+  .cover .grid-ov{ position:absolute; inset:0; opacity:.10;
+    background-image:linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px);
+    background-size:26px 26px; }
+  .cover .crest{ position:absolute; right:-60px; top:-60px; width:340px; height:340px; border-radius:50%;
+    border:2px solid rgba(255,255,255,.25); }
+  .cover .crest2{ position:absolute; right:30px; bottom:60px; width:180px; height:180px; border-radius:50%;
+    border:2px solid rgba(184,134,11,.5); }
+  .cover-inner{ position:relative; padding:34mm 22mm; }
+  .eyebrow{ letter-spacing:4px; text-transform:uppercase; font-size:10pt; color:#7fe3d8; margin-bottom:18px; }
+  .cover h1{ color:#fff; font-size:40pt; line-height:1.05; margin:0 0 12px; }
+  .cover .sub{ font-size:15pt; color:#d6efe9; max-width:150mm; font-weight:300; }
+  .cover .rule{ width:80px; height:5px; background:var(--gold); margin:26px 0; }
+  .cover .meta{ position:absolute; bottom:26mm; left:22mm; right:22mm; font-size:9.5pt; color:#bfe0da;
+    border-top:1px solid rgba(255,255,255,.25); padding-top:12px; display:flex; justify-content:space-between; }
+  .cover .badge{ display:inline-block; border:1px solid rgba(255,255,255,.4); border-radius:30px;
+    padding:6px 16px; font-size:9pt; letter-spacing:1px; margin-top:8px; }
+
+  /* callouts */
+  .box{ border-radius:8px; padding:12px 16px; margin:12px 0; page-break-inside:avoid; }
+  .insight{ background:#e8f4f2; border-left:5px solid var(--accent); }
+  .warn{ background:#fdecee; border-left:5px solid var(--accent2); }
+  .myth{ background:#fbf6e9; border-left:5px solid var(--gold); }
+  .win{ background:#eef2f8; border-left:5px solid var(--navy); }
+  .box .lbl{ font-weight:700; text-transform:uppercase; letter-spacing:1.5px; font-size:8.5pt; display:block; margin-bottom:4px; }
+  .insight .lbl{ color:var(--accent);} .warn .lbl{ color:var(--accent2);} .myth .lbl{ color:var(--gold);} .win .lbl{ color:var(--navy);}
+
+  /* tables */
+  table{ width:100%; border-collapse:collapse; margin:12px 0; font-size:9.3pt; page-break-inside:avoid; }
+  th{ background:var(--navy); color:#fff; text-align:left; padding:7px 9px; font-weight:600; }
+  td{ padding:7px 9px; border-bottom:1px solid var(--line); vertical-align:top; }
+  tr:nth-child(even) td{ background:var(--soft); }
+  caption{ caption-side:bottom; font-size:8.4pt; color:var(--muted); padding-top:5px; text-align:left; }
+
+  /* TOC */
+  .toc h2{ border:none; }
+  .toc ol{ list-style:none; padding:0; counter-reset:sec; }
+  .toc > ol > li{ counter-increment:sec; font-weight:700; color:var(--navy); margin:9px 0; font-size:11.5pt;
+    border-bottom:1px dotted var(--line); padding-bottom:6px; }
+  .toc > ol > li::before{ content:counter(sec) ".  "; color:var(--accent); }
+  .toc ul{ list-style:none; padding-left:20px; font-weight:400; font-size:9.8pt; color:var(--ink2); margin-top:5px; }
+
+  .kpi-row{ display:flex; gap:12px; margin:14px 0; }
+  .kpi{ flex:1; background:var(--soft); border-top:3px solid var(--accent); border-radius:6px; padding:12px; text-align:center; }
+  .kpi .n{ font-size:21pt; font-weight:800; color:var(--accent); display:block; }
+  .kpi .t{ font-size:8.6pt; color:var(--muted); text-transform:uppercase; letter-spacing:1px; }
+
+  .section-tag{ color:var(--accent2); font-weight:700; letter-spacing:3px; text-transform:uppercase; font-size:9pt; }
+  .lead{ font-size:11.5pt; color:var(--ink2); }
+  hr{ border:none; border-top:1px solid var(--line); margin:18px 0; }
+  .pill{ display:inline-block; background:var(--accent); color:#fff; border-radius:20px; padding:2px 10px; font-size:8pt; margin-right:4px; }
+  .footer-note{ font-size:8pt; color:var(--muted); text-align:center; margin-top:30px; }
+  .two-col{ column-count:2; column-gap:22px; }
+  .arch pre{ background:var(--navy); color:#d9f2ee; padding:14px; border-radius:8px; font-size:8.4pt; line-height:1.35; overflow:auto; }
+</style>
+</head>
+<body>
+
+<!-- ============ COVER ============ -->
+<div class="cover">
+  <div class="grid-ov"></div>
+  <div class="crest"></div>
+  <div class="crest2"></div>
+  <div class="cover-inner">
+    <div class="eyebrow">Strategy &amp; Engineering Blueprint &nbsp;|&nbsp; Confidential</div>
+    <h1>The AI<br>Recruiting Brain</h1>
+    <div class="rule"></div>
+    <div class="sub">A scratch-to-production blueprint for building a predictive candidate-ranking engine that reads profiles instead of counting keywords — engineered to win the Redrob <em>Intelligent Candidate Discovery &amp; Ranking Challenge</em>.</div>
+    <div class="badge">PREPARED IN THE MODE OF A McKINSEY / BCG ENGAGEMENT</div>
+    <div class="meta">
+      <span>India Runs &mdash; Data &amp; AI Challenge &nbsp;&bull;&nbsp; Redrob Talent Intelligence</span>
+      <span>Version 1.0 &nbsp;&bull;&nbsp; June 2026</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TOC ============ -->
+<div class="page toc">
+  <h2>Contents</h2>
+  <ol>
+    <li>Executive Summary &mdash; the one-page thesis
+      <ul><li>The winning insight, the bet, and the moat</li></ul>
+    </li>
+    <li>Understand the Sector &mdash; your study briefing
+      <ul><li>Talent intelligence market &bull; Why keyword search fails &bull; IR &amp; Learning-to-Rank primer &bull; Sector challenges &bull; Curated reading list</li></ul>
+    </li>
+    <li>The Challenge, Decoded
+      <ul><li>Dataset anatomy &bull; The hidden game (traps &amp; honeypots) &bull; The scoring function &bull; The JD's true intent &bull; Our empirical findings</li></ul>
+    </li>
+    <li>Baseline vs. Our Edge &mdash; gap analysis
+      <ul><li>What exists today &bull; Where we can do measurably better</li></ul>
+    </li>
+    <li>The Architecture &mdash; scratch to production
+      <ul><li>The 8-stage pipeline &bull; Compute-budget engineering &bull; Production hardening</li></ul>
+    </li>
+    <li>The Secret Sauce &mdash; cross-cultural ranking philosophy
+      <ul><li>Indian, Japanese, Chinese &amp; classical strategy mapped to concrete algorithms</li></ul>
+    </li>
+    <li>How to Win &mdash; differentiating in a field of AI users
+      <ul><li>The story that survives the interview</li></ul>
+    </li>
+    <li>Roadmap, Risks &amp; KPIs</li>
+    <li>Appendices &mdash; stack, repo, reproduce command, glossary</li>
+  </ol>
+  <div class="box myth"><span class="lbl">How to read this document</span>
+  Sections 1&ndash;3 are your <strong>study and orientation</strong> material — read them to understand the sector and the game. Sections 4&ndash;5 are the <strong>engineering plan</strong>. Section 6 is the <strong>creative differentiator</strong> (the cross-cultural "Council of Nine" ranking philosophy). Sections 7&ndash;9 are <strong>execution and reference</strong>.</div>
+</div>
+
+<!-- ============ 1. EXECUTIVE SUMMARY ============ -->
+<div class="page">
+  <span class="section-tag">Section 1</span>
+  <h2>Executive Summary</h2>
+  <p class="lead">The Redrob challenge looks like an information-retrieval problem. It is actually a <strong>reading-comprehension and judgment problem disguised as one.</strong> Every team will reach for embeddings and a vector index. The teams that win will be the ones whose system <em>reads each profile the way a skeptical senior recruiter would</em> — weighing what a career <em>demonstrates</em> over what a skills list <em>claims</em>.</p>
+
+  <h3>The single most important insight</h3>
+  <div class="box warn"><span class="lbl">The trap is the whole game</span>
+  The organizers have <strong>explicitly engineered the dataset to punish keyword-matching</strong>. The provided <code>sample_submission.csv</code> ranks an <em>"HR Manager with 9 AI core skills"</em> at rank&nbsp;1 — this is a deliberate decoy showing you the losing strategy. The job description states plainly: <em>"A candidate who has all the AI keywords listed as skills but whose title is 'Marketing Manager' is not a fit, no matter how perfect their skill list looks."</em> Your competitive advantage is built entirely on <strong>not falling for this.</strong></p></div>
+
+  <h3>Our thesis in three sentences</h3>
+  <ol>
+    <li><strong>Evidence &gt; assertion.</strong> Score the <em>career narrative</em> (titles, role descriptions, company types, tenure) far above the self-declared skills list, and use endorsements + skill-duration + assessment scores as a <em>trust multiplier</em> that discounts unverified claims.</li>
+    <li><strong>Availability is part of fit.</strong> A perfect profile that hasn't logged in for six months and ignores recruiters is, for hiring purposes, not a candidate. Behavioral signals act as a <em>modifier</em>, never as the primary score.</li>
+    <li><strong>Explainability is the moat.</strong> The contest is decided in human stages (code review + a defend-your-work interview), not just on the metric. A transparent, defensible, fast architecture beats an opaque black box of equal accuracy.</li>
+  </ol>
+
+  <div class="kpi-row">
+    <div class="kpi"><span class="n">100K</span><span class="t">candidates to rank</span></div>
+    <div class="kpi"><span class="n">Top&nbsp;100</span><span class="t">required output</span></div>
+    <div class="kpi"><span class="n">&le;5 min</span><span class="t">CPU-only, no network</span></div>
+    <div class="kpi"><span class="n">~80</span><span class="t">honeypots to avoid</span></div>
+  </div>
+
+  <h3>The bet that wins</h3>
+  <p>A <strong>hybrid retrieval + multi-signal learning-to-rank engine</strong> with a built-in <strong>integrity layer</strong> (honeypot &amp; keyword-stuffer detection), wrapped in a <strong>narrative we can defend</strong>: a "Council of Nine" ensemble where each scorer embodies a distinct evaluative philosophy drawn from world strategic traditions (Arthashastra, Sun Tzu, Confucian <em>rectification of names</em>, Japanese <em>honne/tatemae</em>). This is not decoration — each maps to a concrete, measurable feature. It gives us a memorable story for the judges <em>and</em> a genuinely better model.</p>
+
+  <div class="box insight"><span class="lbl">Why we will stand out</span>
+  Everyone has the same LLMs and the same embeddings. Differentiation comes from (a) <strong>trap-resistance</strong> others won't bother engineering, (b) <strong>calibrated, human-readable reasoning</strong> that survives Stage-4 review, (c) a <strong>distinctive intellectual framing</strong> that makes our interview unforgettable, and (d) <strong>ruthless reproducibility</strong> inside the 5-minute CPU budget.</p></div>
+</div>
+
+<!-- ============ 2. UNDERSTAND THE SECTOR ============ -->
+<div class="page">
+  <span class="section-tag">Section 2 &mdash; Study Briefing</span>
+  <h2>Understand the Sector</h2>
+  <p class="lead">Before a line of code, you need the mental model of the industry you are disrupting. This is your 30-minute "get smart" briefing.</p>
+
+  <h3>2.1 The talent-intelligence landscape</h3>
+  <p>Recruiting technology has moved through three eras. Understanding where we are explains why this challenge exists.</p>
+  <table>
+    <tr><th>Era</th><th>Core technology</th><th>How candidates were found</th><th>Fatal weakness</th></tr>
+    <tr><td><strong>1. Boolean / ATS</strong> (1990s&ndash;2010s)</td><td>Keyword &amp; Boolean search over resumes; Applicant Tracking Systems</td><td><code>("Python" AND "ML") NOT "intern"</code></td><td>Misses synonyms, context, and intent; rewards keyword stuffing; high false-negative rate on great candidates who phrase things differently.</td></tr>
+    <tr><td><strong>2. Semantic / ML matching</strong> (2015&ndash;2022)</td><td>Word/sentence embeddings, learning-to-rank, LinkedIn-style "similar candidates"</td><td>Vector similarity between JD and profile</td><td>Understands meaning but not <em>judgment</em>; can be fooled by profiles engineered to look similar; ignores behavioral reality.</td></tr>
+    <tr><td><strong>3. Talent intelligence / agentic</strong> (2023&ndash;now)</td><td>LLMs, RAG, hybrid retrieval, signal fusion, predictive availability</td><td>Reasoning over multi-modal signals to predict <em>hireability</em>, not just similarity</td><td>Cost &amp; latency at scale; hallucination; explainability &amp; bias/compliance risk.</td></tr>
+  </table>
+  <p>Redrob positions itself in Era 3 ("AI-native talent intelligence"). This challenge is a microcosm of the core Era-3 problem: <strong>move from similarity to judgment, at scale, cheaply, and defensibly.</strong></p>
+
+  <h3>2.2 Why keyword filters genuinely fail</h3>
+  <ul>
+    <li><strong>Vocabulary mismatch.</strong> A candidate who "built a recommendation system that served 10M users" never types the word "ranking engineer," yet is a perfect fit. Keyword filters have a documented <em>vocabulary gap</em> — studies in IR put the chance two people use the same term for the same concept at under 20%.</li>
+    <li><strong>Gameability.</strong> Candidates (and bots) learn which words pass filters and stuff them. The filter rewards the gamer over the genuine.</li>
+    <li><strong>No notion of evidence.</strong> "Expert in LLM fine-tuning" as a self-tag is treated identically whether backed by 5 years of shipping or 0 months of actual use.</li>
+    <li><strong>No notion of intent or availability.</strong> Filters can't tell an actively-looking engineer from a dormant profile.</li>
+    <li><strong>Context collapse.</strong> "Lead" in "Lead Generation" vs "Lead Engineer"; "Python" the language vs a zoology reference. Keywords are context-blind.</li>
+  </ul>
+
+  <h3>2.3 A fast primer on Information Retrieval &amp; Learning-to-Rank</h3>
+  <p>You must speak this language fluently — the JD demands it and the interview will test it.</p>
+  <table>
+    <tr><th>Concept</th><th>What it is</th><th>Why it matters here</th></tr>
+    <tr><td><strong>BM25 (lexical)</strong></td><td>Probabilistic keyword-ranking that weights rare terms and dampens term-frequency. The workhorse of classic search.</td><td>The stated baseline. Great for exact-skill recall; blind to meaning. We keep it as one signal, not the answer.</td></tr>
+    <tr><td><strong>Dense retrieval (embeddings)</strong></td><td>Encode text into vectors so semantic neighbors are close. Models: <code>BGE</code>, <code>E5</code>, <code>sentence-transformers</code>.</td><td>Captures "built recsys" &asymp; "ranking engineer." Our semantic core. Must run on CPU.</td></tr>
+    <tr><td><strong>Hybrid retrieval</strong></td><td>Fuse lexical + dense scores (e.g., Reciprocal Rank Fusion).</td><td>Best of both: lexical precision + semantic recall. State of the art for this exact task.</td></tr>
+    <tr><td><strong>Cross-encoder re-rank</strong></td><td>A model that reads JD+profile <em>together</em> and scores fit. Slower, far more accurate.</td><td>Used on the top-K only (e.g., top 1,000) to fit the compute budget.</td></tr>
+    <tr><td><strong>Learning-to-Rank (LTR)</strong></td><td>Models (LambdaMART/XGBoost, neural) trained to optimize ranking directly.</td><td>Fuses dozens of features into one calibrated score. Our final scorer if we synthesize labels.</td></tr>
+  </table>
+
+  <h4>The evaluation metrics — know these cold</h4>
+  <table>
+    <tr><th>Metric</th><th>Plain-English meaning</th><th>Challenge weight</th></tr>
+    <tr><td><strong>NDCG@10</strong></td><td>Are the right people at the very top, in the right order? (graded relevance, discounted by position)</td><td><span class="pill">0.50</span> dominant</td></tr>
+    <tr><td><strong>NDCG@50</strong></td><td>Same, across the top 50.</td><td><span class="pill">0.30</span></td></tr>
+    <tr><td><strong>MAP</strong></td><td>Precision averaged across all relevant items — rewards finding <em>all</em> the good ones.</td><td><span class="pill">0.15</span></td></tr>
+    <tr><td><strong>P@10</strong></td><td>Fraction of top-10 that are at least "relevant" (tier 3+).</td><td><span class="pill">0.05</span></td></tr>
+  </table>
+  <div class="box insight"><span class="lbl">Strategic read of the scoring function</span>
+  <strong>80% of your score lives in the top 50, and 50% in the top 10.</strong> This is a precision-at-the-top game. Getting ranks 1&ndash;10 exactly right matters more than anything else. Spend your modeling effort where the weight is: be paranoid about the top of the list, and never let a honeypot or keyword-stuffer near it.</p></div>
+
+  <h3>2.4 The hard challenges of this sector</h3>
+  <ul>
+    <li><strong>Scale vs. depth.</strong> Deep reasoning (LLM-per-candidate) doesn't scale to millions cheaply. The whole challenge enforces this via the 5-minute CPU budget.</li>
+    <li><strong>Bias &amp; fairness.</strong> Models trained on historical hiring inherit its biases (gender, school prestige, name origin). Production systems need auditing — the dataset's "tier" field and salary signals are exactly where bias hides.</li>
+    <li><strong>Gaming &amp; adversarial profiles.</strong> The honeypots and keyword-stuffers model real-world resume fraud and SEO-style profile optimization.</li>
+    <li><strong>Cold start &amp; sparse signals.</strong> 65% of candidates have no GitHub; many signals are missing or default. Robustness to missingness is essential.</li>
+    <li><strong>Explainability &amp; trust.</strong> Recruiters won't act on a black-box number. Regulations (EEOC, EU AI Act's "high-risk" classification of hiring AI) increasingly require explanations.</li>
+  </ul>
+
+  <div class="box myth"><span class="lbl">Curated reading list (study these)</span>
+  <strong>Foundations:</strong> Manning, Raghavan &amp; Sch&uuml;tze, <em>Introduction to Information Retrieval</em> (free online) — ch. on ranking &amp; evaluation. &bull; The original <strong>BM25 / Okapi</strong> papers (Robertson &amp; Zaragoza). &bull; <strong>"Dense Passage Retrieval"</strong> (Karpukhin et al., 2020). &bull; <strong>BGE / E5</strong> embedding model cards on HuggingFace. &bull; <strong>"From RankNet to LambdaRank to LambdaMART"</strong> (Burges, 2010). &bull; <strong>Reciprocal Rank Fusion</strong> (Cormack et al., 2009). &bull; <strong>ColBERT</strong> (late-interaction re-ranking). &bull; Industry: LinkedIn's <em>"Talent Search"</em> engineering blog, Google's <em>"Rules of ML"</em> (Zinkevich). &bull; Fairness: <em>"Fairness and Abuse in Hiring Algorithms"</em>, the EU AI Act hiring provisions.</p></div>
+</div>
+
+<!-- ============ 3. CHALLENGE DECODED ============ -->
+<div class="page">
+  <span class="section-tag">Section 3</span>
+  <h2>The Challenge, Decoded</h2>
+
+  <h3>3.1 Dataset anatomy &mdash; what is actually present</h3>
+  <p>The bundle gives us a richer, cleaner dataset than most real systems ever see. Knowing every field is a competitive advantage.</p>
+  <table>
+    <tr><th>Block</th><th>Fields</th><th>Signal value for ranking</th></tr>
+    <tr><td><strong>profile</strong></td><td>headline, summary, location, country, years_of_experience, current_title, current_company, company_size, industry</td><td><strong>High.</strong> <code>current_title</code> + <code>summary</code> are the strongest honest signals of true role identity.</td></tr>
+    <tr><td><strong>career_history</strong> (1&ndash;10 roles)</td><td>company, title, dates, duration_months, is_current, industry, company_size, <em>description</em></td><td><strong>Highest.</strong> The role <em>descriptions</em> are where genuine "built a recsys / ranking / retrieval system" evidence lives. This is the gold.</td></tr>
+    <tr><td><strong>education</strong></td><td>institution, degree, field, years, grade, <em>tier</em> (1&ndash;4/unknown)</td><td>Medium. Useful, but a bias vector — handle the prestige <code>tier</code> carefully.</td></tr>
+    <tr><td><strong>skills</strong></td><td>name, proficiency, <em>endorsements</em>, <em>duration_months</em></td><td><strong>Trap-laden.</strong> The claim is weak; <code>endorsements</code> + <code>duration_months</code> are the verification that separates real from stuffed.</td></tr>
+    <tr><td><strong>certifications / languages</strong></td><td>name/issuer/year; language/proficiency</td><td>Low&ndash;medium. Tie-breakers and locale fit.</td></tr>
+    <tr><td><strong>redrob_signals</strong> (23 signals)</td><td>completeness, last_active, open_to_work, response rate, assessment scores, github score, saved_by_recruiters, interview/offer rates, notice period, salary, work-mode, verification flags&hellip;</td><td><strong>The behavioral modifier.</strong> Predicts <em>hireability &amp; availability</em>, not skill. Use as a bounded multiplier.</td></tr>
+  </table>
+
+  <div class="kpi-row">
+    <div class="kpi"><span class="n">~65%</span><span class="t">have NO GitHub (score &minus;1)</span></div>
+    <div class="kpi"><span class="n">~75%</span><span class="t">are India-based</span></div>
+    <div class="kpi"><span class="n">7.1y</span><span class="t">mean experience</span></div>
+    <div class="kpi"><span class="n">0.44</span><span class="t">mean recruiter response</span></div>
+  </div>
+  <p style="font-size:8.6pt;color:var(--muted)">Figures from our own sample analysis of 8,000 records (see &sect;3.5). Verify on the full pool during build.</p>
+
+  <h3>3.2 The hidden game &mdash; four trap families</h3>
+  <p>The organizers <em>told us</em> the dataset is adversarial. Decoding the traps is decoding the answer key.</p>
+  <table>
+    <tr><th>Trap</th><th>What it looks like</th><th>How we defeat it</th></tr>
+    <tr><td><strong>Keyword stuffers</strong></td><td>Wrong-role title (HR Manager, Content Writer) with a long list of trendy AI skills. The <code>sample_submission</code> ranks these #1 — deliberately.</td><td>Title/career evidence dominates; skills are gated by endorsements &amp; duration. A skill with 0 endorsements / 0 months barely counts.</td></tr>
+    <tr><td><strong>Plain-language Tier&nbsp;5s</strong> (the hidden gems)</td><td>Never says "RAG" or "Pinecone," but career history shows they <em>built</em> a recommendation/search/ranking system at a product company.</td><td>Semantic retrieval + description mining. Reward demonstrated systems-building over buzzwords. This is where points are won.</td></tr>
+    <tr><td><strong>Behavioral twins</strong></td><td>Two near-identical profiles; one is engaged &amp; responsive, the other dormant &amp; unresponsive.</td><td>Behavioral-availability modifier separates them — exactly what it's designed for.</td></tr>
+    <tr><td><strong>Honeypots (~80)</strong></td><td><em>Subtly impossible</em>: 8 yrs at a 3-yr-old company; "expert" in 10 skills with 0 months used; tenure sums exceeding age.</td><td>A dedicated <strong>integrity / plausibility layer</strong> runs consistency checks and forces these to the bottom. <strong>&gt;10% honeypots in top 100 = disqualification.</strong></td></tr>
+  </table>
+
+  <h3>3.3 The JD, decoded &mdash; what it says vs. what it means</h3>
+  <p>The job description is a deliberately unconventional "anti-checklist." It rewards <em>reading between the lines</em>.</p>
+  <table>
+    <tr><th>The JD signal</th><th>Literal text</th><th>What your ranker must encode</th></tr>
+    <tr><td>Must-haves</td><td>Production embeddings/retrieval; vector DBs/hybrid search; strong Python; ranking-eval frameworks (NDCG/MRR/MAP)</td><td>Hard requirement features. Look for these <em>as demonstrated in career descriptions</em>, not just skill tags.</td></tr>
+    <tr><td>The "ideal"</td><td>6&ndash;8 yrs total, 4&ndash;5 in applied ML at <strong>product companies</strong>; shipped an end-to-end ranking/search/recsys at scale</td><td>Experience-band fit + product-vs-services company classifier + "shipped a system" evidence detector.</td></tr>
+    <tr><td>Explicit <strong>disqualifiers</strong> (via negativa)</td><td>Pure-research-only; &lt;12mo LangChain-only "AI"; title-chasers (job-hop every 1.5y); pure-services-firm-only careers (TCS/Infosys/Wipro/&hellip;); CV/speech/robotics without NLP/IR</td><td>A <strong>penalty layer</strong>. Detect job-hopping from tenure variance; flag services-only careers; down-weight non-NLP specializations.</td></tr>
+    <tr><td>Logistics</td><td>Pune/Noida preferred or willing to relocate; sub-30-day notice preferred; active on platform</td><td>Soft location/notice/availability features — modifiers, not gates (JD says "still in scope, bar gets higher").</td></tr>
+  </table>
+  <div class="box warn"><span class="lbl">The "Marketing-Manager-with-all-the-keywords" test</span>
+  The JD literally hands you the disqualifying example and the saving example. Bake both into your test suite: your ranker must rank the plain-language recsys-builder <em>above</em> the keyword-perfect Marketing Manager. If it doesn't, it's broken.</p></div>
+
+  <h3>3.4 The output contract (don't get auto-rejected)</h3>
+  <ul>
+    <li>CSV, UTF-8, columns exactly: <code>candidate_id,rank,score,reasoning</code>.</li>
+    <li>Exactly 100 data rows; ranks 1&ndash;100 each once; unique IDs that exist in the pool.</li>
+    <li><code>score</code> non-increasing with rank; ties broken by <code>candidate_id</code> ascending.</li>
+    <li>Reasoning must be specific, grounded (no hallucinated skills), and consistent with the rank — it is graded by humans at Stage&nbsp;4.</li>
+  </ul>
+
+  <h3>3.5 Our empirical findings (from analyzing the pool)</h3>
+  <p>We sampled the 100K pool to ground the strategy in evidence:</p>
+  <ul>
+    <li><strong>The pool is mostly NOT AI engineers.</strong> Top titles are Business Analyst, Mechanical Engineer, HR Manager, Sales Executive, Civil Engineer. True software/AI roles are a minority — so the relevant set is small and precision is everything (the JD even says: <em>"we'd rather see 10 great matches than 1000 maybes"</em>).</li>
+    <li><strong>Industries skew to IT Services + Manufacturing</strong>, with only a thin slice of Software/Fintech/AI-ML — reinforcing the product-vs-services discriminator.</li>
+    <li><strong>~65% have no GitHub</strong> — so GitHub must be a <em>bonus when present</em>, never a requirement (it would unfairly sink valid candidates).</li>
+    <li><strong>Recruiter response rate averages ~0.44</strong> with heavy spread — a genuinely discriminating availability signal.</li>
+  </ul>
+</div>
+
+<!-- ============ 4. BASELINE VS EDGE ============ -->
+<div class="page">
+  <span class="section-tag">Section 4</span>
+  <h2>Baseline vs. Our Edge</h2>
+  <p class="lead">The JD tells us Redrob's current system is "mostly BM25 + rule-based scoring, working but not great." That is our baseline to beat — and the sample submission shows the naive trap. Here is the honest gap analysis.</p>
+
+  <h3>4.1 What already exists (and its ceiling)</h3>
+  <table>
+    <tr><th>Component present</th><th>Strength</th><th>Why it plateaus</th></tr>
+    <tr><td>BM25 / Boolean keyword search</td><td>Fast, transparent, good recall on exact skills</td><td>Vocabulary gap; rewards stuffing; no judgment.</td></tr>
+    <tr><td>Rule-based scoring (sample submission)</td><td>Deterministic, explainable</td><td>The sample literally ranks keyword-stuffers #1 — it counts "AI core skills" regardless of role. Falls into every trap.</td></tr>
+    <tr><td>Rich structured schema + 23 signals</td><td>Far more than a real ATS has</td><td>Untapped — the baseline ignores behavioral signals and career-description evidence.</td></tr>
+  </table>
+
+  <h3>4.2 Where we do measurably better</h3>
+  <table>
+    <tr><th>Dimension</th><th>Naive / baseline approach</th><th>Our approach</th><th>Expected lift</th></tr>
+    <tr><td>Matching</td><td>Keyword overlap</td><td>Hybrid lexical + dense semantic + cross-encoder re-rank on top-K</td><td>Large recall+precision gain on hidden gems</td></tr>
+    <tr><td>Skill trust</td><td>Count skills</td><td>Endorsement&times;duration&times;assessment trust-weighting; discount unverified claims</td><td>Neutralizes keyword stuffers</td></tr>
+    <tr><td>Role identity</td><td>Ignored or keyword-only</td><td>Title + career-trajectory + product-vs-services classifier; "shipped a system" evidence detector</td><td>Directly targets the JD's core ask</td></tr>
+    <tr><td>Integrity</td><td>None</td><td>Plausibility/consistency checks force honeypots down</td><td>Avoids disqualification; protects top-10</td></tr>
+    <tr><td>Availability</td><td>Ignored</td><td>Bounded behavioral modifier (recency, response, saved-by-recruiters)</td><td>Separates behavioral twins</td></tr>
+    <tr><td>Explainability</td><td>Generic</td><td>Grounded, per-candidate reasoning with honest concerns</td><td>Wins Stage-4 review</td></tr>
+    <tr><td>Negative screening</td><td>None</td><td>Penalty layer for job-hoppers, services-only, off-domain specializations</td><td>Encodes the JD's "do NOT want" list</td></tr>
+  </table>
+</div>
+
+<!-- ============ 5. ARCHITECTURE ============ -->
+<div class="page arch">
+  <span class="section-tag">Section 5 &mdash; The Build</span>
+  <h2>The Architecture: Scratch to Production</h2>
+  <p class="lead">A two-phase design: an <strong>offline precompute</strong> phase (embeddings, indexes, features — allowed to exceed 5 min) and a fast <strong>online ranking</strong> phase that produces the CSV in &le;5 min on CPU with no network. This split is exactly what the compute rules reward and what production talent-intelligence systems actually do.</p>
+
+  <h3>5.1 System overview</h3>
+  <pre>
+            OFFLINE  (precompute — run once, cached to disk)
+  ┌───────────────────────────────────────────────────────────────┐
+  │ candidates.jsonl (100K)                                         │
+  │     │                                                           │
+  │     ├─► [0] Parse + normalize + feature engineering             │
+  │     ├─► [1] JD interpretation → structured "intent profile"     │
+  │     ├─► Build BM25 index (lexical)                              │
+  │     └─► Encode profiles with CPU embedding model → FAISS index  │
+  └───────────────────────────────────────────────────────────────┘
+                              │  cached artifacts
+            ONLINE  (≤5 min, CPU, no network — produces submission.csv)
+  ┌───────────────────────────────────────────────────────────────┐
+  │ [2] Hybrid retrieval  →  candidate shortlist (top ~2,000)       │
+  │ [3] Multi-signal feature scoring (the "Council of Nine")        │
+  │ [4] Cross-encoder / LTR re-rank on shortlist                    │
+  │ [5] Integrity & honeypot guard (force impossible → bottom)      │
+  │ [6] Behavioral-availability modifier (bounded multiplier)       │
+  │ [7] Final calibrated score + deterministic tie-break            │
+  │ [8] Grounded reasoning generation  →  TOP 100 → CSV             │
+  └───────────────────────────────────────────────────────────────┘
+  </pre>
+
+  <h3>5.2 Stage-by-stage</h3>
+
+  <h4>[0] Parse, normalize &amp; feature engineering</h4>
+  <ul>
+    <li>Flatten JSON; compute derived features: total tenure, tenure variance (job-hop signal), avg months per role, product-vs-services company class, recency of last activity (days since <code>last_active_date</code>), skill-trust scores.</li>
+    <li>Build a clean text document per candidate (headline + summary + concatenated role descriptions) for embedding and BM25.</li>
+  </ul>
+
+  <h4>[1] Deep JD interpretation</h4>
+  <ul>
+    <li>Convert the messy JD into a <strong>structured intent profile</strong>: must-have capabilities, nice-to-haves, hard disqualifiers, experience band, location/notice preferences, and weights. (Do this <em>once</em>, offline — an LLM may be used in <em>development</em> to draft this structure; the committed artifact is static JSON so the ranking step needs no network.)</li>
+    <li>This is "Deep Job Understanding" from the brief — and it is auditable.</li>
+  </ul>
+
+  <h4>[2] Hybrid retrieval</h4>
+  <ul>
+    <li>Run BM25 and dense (FAISS) retrieval against the JD intent text; fuse with <strong>Reciprocal Rank Fusion</strong> to a shortlist (~1,000&ndash;2,000). This cheaply removes the ~98% obviously-irrelevant pool so expensive scoring only touches plausible candidates — the key to the 5-minute budget.</li>
+  </ul>
+
+  <h4>[3] Multi-signal feature scoring — the "Council of Nine"</h4>
+  <p>Nine independent, interpretable sub-scorers (detailed in Section 6), each producing a 0&ndash;1 score and a one-line rationale. Examples: semantic-fit, role-identity, evidence-of-shipping, skill-trust, experience-band, education/tier, domain-match, negative-screen, behavioral-availability.</p>
+
+  <h4>[4] Re-rank (cross-encoder or LTR)</h4>
+  <ul>
+    <li>On the shortlist only, run a compact CPU cross-encoder (e.g., a small MS-MARCO MiniLM re-ranker) <em>or</em> a gradient-boosted LTR model (XGBoost/LightGBM) over the Council features. LTR is preferred: fast on CPU, calibrated, and fully explainable via feature importances.</li>
+    <li>If no ground-truth labels exist, generate <strong>weak/synthetic labels</strong> from the JD intent (e.g., programmatic relevance tiers) to train LTR — and document this honestly.</li>
+  </ul>
+
+  <h4>[5] Integrity &amp; honeypot guard</h4>
+  <ul>
+    <li>Plausibility rules: tenure sum &le; (age implied by experience); role duration &le; company existence window; "expert" proficiency requires <code>duration_months &gt; 0</code> and endorsements; assessment score consistency. Any hard violation &rarr; score floored, excluded from top 100.</li>
+    <li>Target: <strong>0% honeypots in top 100</strong> (limit is 10%; we aim for zero).</li>
+  </ul>
+
+  <h4>[6] Behavioral-availability modifier</h4>
+  <ul>
+    <li>A bounded multiplier in, say, <code>[0.75, 1.10]</code> from recency, recruiter-response-rate, open-to-work, saved-by-recruiters, interview-completion. Never lets behavior <em>override</em> a strong skills match — only nudges between close candidates and separates behavioral twins.</li>
+  </ul>
+
+  <h4>[7] Final score &amp; tie-break</h4>
+  <ul>
+    <li>Combine into a calibrated 0&ndash;1 score, enforce monotonic non-increasing ordering, tie-break by <code>candidate_id</code> ascending (validator requirement).</li>
+  </ul>
+
+  <h4>[8] Grounded reasoning generation</h4>
+  <ul>
+    <li>Template-with-evidence: assemble each reasoning string from <em>facts actually present</em> in the candidate (years, current title, named verified skills, key signal values) plus the top contributing Council rationale and any honest concern. No hallucination, varied per candidate, tone matches rank — satisfying all six Stage-4 checks.</li>
+  </ul>
+
+  <h3>5.3 Engineering for the 5-minute CPU budget</h3>
+  <table>
+    <tr><th>Lever</th><th>Technique</th></tr>
+    <tr><td>Precompute everything heavy</td><td>Embeddings + indexes built offline, cached to disk; ranking step just loads &amp; scores.</td></tr>
+    <tr><td>Retrieve-then-rank</td><td>Expensive models touch only ~1&ndash;2K shortlisted candidates, not 100K.</td></tr>
+    <tr><td>Vectorized scoring</td><td>NumPy/pandas batch ops; quantized FAISS index; small distilled re-ranker.</td></tr>
+    <tr><td>Determinism</td><td>Fixed seeds, stable sorts &rarr; reproducible CSV (Stage-3 reproduction will re-run it).</td></tr>
+  </table>
+
+  <h3>5.4 Taking it to production (beyond the contest)</h3>
+  <ul>
+    <li><strong>Serving:</strong> swap FAISS for a managed vector DB (Qdrant/Weaviate/OpenSearch hybrid), expose a ranking API.</li>
+    <li><strong>Feedback loops:</strong> log recruiter clicks/saves/messages &rarr; train LTR on real engagement (offline-to-online correlation, as the JD demands).</li>
+    <li><strong>Evaluation infra:</strong> offline NDCG/MRR/MAP harness + online A/B tests + golden-set regression tests on every model change.</li>
+    <li><strong>Monitoring:</strong> embedding-drift detection, index-refresh jobs, fairness audits across gender/tier/region, honeypot/fraud monitors.</li>
+    <li><strong>MLOps:</strong> model registry, reproducible pipelines, shadow deployment before promotion.</li>
+  </ul>
+</div>
+
+<!-- ============ 6. SECRET SAUCE ============ -->
+<div class="page">
+  <span class="section-tag">Section 6 &mdash; The Differentiator</span>
+  <h2>The Secret Sauce: a Cross-Cultural Ranking Philosophy</h2>
+  <p class="lead">Every team will use embeddings. Almost none will give their engine a <em>soul</em> — a coherent intellectual framework that is simultaneously a memorable story <strong>and</strong> a precise engineering spec. We propose the <strong>"Council of Nine" (Navaratna) ensemble</strong>: nine sub-scorers, each embodying a tested principle of human judgment drawn from world strategic and philosophical traditions. Each maps to a concrete, measurable feature. The judges will remember it; the metric will reward it.</p>
+
+  <div class="box myth"><span class="lbl">Why this is more than a gimmick</span>
+  Humanity has spent millennia perfecting "how to judge a person's true worth from incomplete, possibly deceptive signals" — in statecraft, war, and courts. These traditions encode <strong>battle-tested heuristics for exactly our problem</strong>: separating genuine merit from performance, detecting deception, and weighing potential against proof. We are not decorating an algorithm with mythology; we are <em>mining strategic wisdom for feature design.</em></p></div>
+
+  <h3>6.1 The Navaratna — Akbar's Nine Gems &rarr; our nine scorers</h3>
+  <p>The Mughal court of Akbar kept <em>Navaratna</em>, nine specialists each unmatched in one domain; the king's wisdom was in <em>synthesizing</em> them. Our ensemble mirrors this: nine narrow experts, one fusion. This is also sound ML — a diversified ensemble of weak, decorrelated scorers beats any single model.</p>
+  <table>
+    <tr><th>#</th><th>Gem / scorer</th><th>Tradition &amp; principle</th><th>Concrete feature it computes</th></tr>
+    <tr><td>1</td><td><strong>Semantic Seer</strong></td><td><em>Daoism — Wu Wei</em>: don't force keywords; let meaning flow.</td><td>Dense embedding similarity between JD intent and full profile text.</td></tr>
+    <tr><td>2</td><td><strong>Name-Rectifier</strong></td><td><em>Confucius — Zhengming (rectification of names)</em>: "let the title match the reality." The HR-Manager-with-AI-skills fails here.</td><td>Title&harr;evidence consistency; penalizes role/skill mismatch.</td></tr>
+    <tr><td>3</td><td><strong>Evidence Scout</strong></td><td><em>Kautilya's Arthashastra</em>: a king trusts <em>spies &amp; verification</em>, never claims alone.</td><td>Mines career <em>descriptions</em> for "built/shipped/scaled a ranking/search/recsys" evidence.</td></tr>
+    <tr><td>4</td><td><strong>Mask-Piercer</strong></td><td><em>Japanese Honne vs. Tatemae</em>: the public face (skills list) vs. the true self (career record). Sun Tzu: "all warfare is deception" &rarr; detect it.</td><td>Skill-trust = f(endorsements, duration, assessment); discounts the stuffer's mask.</td></tr>
+    <tr><td>5</td><td><strong>Path-Reader</strong></td><td><em>Shu-Ha-Ri</em> (mastery stages) + <em>Ship of Theseus</em> (continuity of identity through change).</td><td>Experience-band fit, proficiency progression, tenure stability (job-hop detection).</td></tr>
+    <tr><td>6</td><td><strong>Terrain Master</strong></td><td><em>Sun Tzu</em>: "know the ground." Product vs. services firms are different terrain.</td><td>Company-type &amp; domain classifier (product-company &amp; NLP/IR proximity).</td></tr>
+    <tr><td>7</td><td><strong>Neti-Neti Gatekeeper</strong></td><td><em>Vedantic "neti neti" (not this, not this)</em> + Daoist <em>elimination</em>: define excellence by what to reject.</td><td>Negative screen: services-only careers, off-domain (CV/speech/robotics-only), pure-research-only.</td></tr>
+    <tr><td>8</td><td><strong>Integrity Warden</strong></td><td><em>Yaksha Prashna (Mahabharata)</em>: Yudhishthira answers riddles of truth; impossible claims are exposed.</td><td>Plausibility/honeypot checks (timeline &amp; logical consistency).</td></tr>
+    <tr><td>9</td><td><strong>Availability Oracle</strong></td><td><em>I Ching / Yin-Yang balance</em>: the best skill is worthless if the person is unreachable; balance ability with readiness.</td><td>Behavioral-availability modifier (recency, response, engagement).</td></tr>
+  </table>
+
+  <h3>6.2 The deeper principles, mapped to mechanics</h3>
+  <table>
+    <tr><th>Source &amp; idea</th><th>The wisdom</th><th>Algorithmic translation</th></tr>
+    <tr><td><strong>Arjuna &amp; the eye of the bird</strong> (Mahabharata)</td><td>Drona's test: the master archer sees <em>only</em> the decisive target, nothing else.</td><td>Feature-importance focus: let the few decisive signals (role evidence, skill-trust) dominate; suppress noise.</td></tr>
+    <tr><td><strong>Chanakya's Saptanga</strong> (seven limbs of state)</td><td>A state is judged on multiple interdependent organs, not one.</td><td>Multi-factor scoring across orthogonal feature groups — no single feature can carry a candidate.</td></tr>
+    <tr><td><strong>Sun Tzu — "know the enemy and know yourself"</strong></td><td>Victory needs deep understanding of <em>both</em> sides.</td><td>Symmetric depth: rich JD interpretation <em>and</em> rich candidate modeling, not just profile scoring.</td></tr>
+    <tr><td><strong>Keju imperial exams</strong> (China, 1,300 yrs)</td><td>The original large-scale, multi-stage meritocratic ranking system.</td><td>Our retrieve &rarr; score &rarr; re-rank &rarr; integrity-gate cascade is a modern Keju: progressive, tiered filtering.</td></tr>
+    <tr><td><strong>Kaizen</strong> (Japan)</td><td>Continuous, evidence-driven improvement.</td><td>The eval harness + golden-set regression loop in &sect;5.4 — never ship a change that drops NDCG.</td></tr>
+    <tr><td><strong>Ikigai</strong> (Japan)</td><td>Fit = intersection of what you're good at, what's needed, what's valued.</td><td>Relevance defined as intersection of capability &times; JD-need &times; demonstrated impact — not any single axis.</td></tr>
+    <tr><td><strong>Kintsugi / Wabi-sabi</strong> (Japan)</td><td>Value the imperfect; mend with gold. Don't discard a gem for a small flaw.</td><td>Soft penalties (not hard cuts) for fixable concerns (notice period, location) so true gems aren't lost.</td></tr>
+    <tr><td><strong>Mottainai</strong> (Japan)</td><td>"What a waste" — never let value go unused.</td><td>High-recall retrieval so plain-language hidden gems are never silently dropped before scoring.</td></tr>
+    <tr><td><strong>Occam's Razor / Aristotle's <em>phronesis</em></strong></td><td>Prefer the simplest sufficient explanation; practical wisdom over abstract cleverness.</td><td>Favor interpretable LTR over an opaque deep model of equal accuracy — it also wins the defense interview.</td></tr>
+  </table>
+
+  <div class="box win"><span class="lbl">The narrative payload for the judges</span>
+  In the methodology summary and the Stage-5 interview, we present the engine as a <strong>"Council of Nine"</strong> that deliberates on each candidate the way a wise court evaluates an envoy — verifying claims (Arthashastra), demanding the title match reality (Confucius), piercing the public mask (honne/tatemae), and checking that the story is even <em>possible</em> (Yaksha Prashna). It is rigorous, original, and unforgettable — and every clause is backed by a real feature in the code.</p></div>
+</div>
+
+<!-- ============ 7. HOW TO WIN ============ -->
+<div class="page">
+  <span class="section-tag">Section 7</span>
+  <h2>How to Win in a Field Where Everyone Uses AI</h2>
+  <p class="lead">The contest is explicitly engineered so that "AI-only, paste-and-pray" entries die at Stages 3&ndash;5. The winners are teams that did <em>real engineering</em> and can prove it. Here is our edge, mapped to each stage.</p>
+  <table>
+    <tr><th>Stage</th><th>What kills most teams</th><th>Our winning move</th></tr>
+    <tr><td><strong>1. Format</strong></td><td>Wrong row count, non-monotonic scores, bad IDs</td><td>Run <code>validate_submission.py</code> in CI on every build; never submit unvalidated.</td></tr>
+    <tr><td><strong>2. Scoring</strong></td><td>Keyword-matchers rank stuffers &amp; honeypots high &rarr; low NDCG@10</td><td>Precision-at-top obsession + trap resistance; protect ranks 1&ndash;10 fanatically (50% of the score).</td></tr>
+    <tr><td><strong>3. Reproduction + honeypot</strong></td><td>Can't reproduce in 5 min CPU; &gt;10% honeypots</td><td>Offline/online split tested on a clean 16GB box; integrity layer targets 0% honeypots.</td></tr>
+    <tr><td><strong>4. Manual review</strong></td><td>Templated/hallucinated reasoning; flat git history</td><td>Grounded, varied, honest reasoning; <strong>real, frequent commits</strong> showing genuine iteration.</td></tr>
+    <tr><td><strong>5. Defend-your-work</strong></td><td>Can't explain the architecture they "built"</td><td>The Council-of-Nine framing makes our design trivially explainable and clearly our own.</td></tr>
+  </table>
+
+  <h3>7.1 Five concrete differentiators</h3>
+  <ol>
+    <li><strong>Trap-resistance as a headline feature.</strong> Most teams will accidentally rank stuffers/honeypots high. We make trap-defeat an explicit, tested capability — and say so in the methodology.</li>
+    <li><strong>Calibrated, honest reasoning.</strong> We acknowledge concerns ("strong fit but 120-day notice"), which Stage-4 explicitly rewards and almost no one does.</li>
+    <li><strong>The intellectual brand.</strong> "Council of Nine / Navaratna" is a story judges will repeat. Memorability is a tiebreaker in human-judged stages.</li>
+    <li><strong>Ruthless reproducibility.</strong> A one-command, deterministic, sub-5-minute pipeline with a clean sandbox demo — we pass Stage 3 effortlessly while others scramble.</li>
+    <li><strong>An honest test suite.</strong> Encode the JD's own examples (the Marketing-Manager trap, the plain-language gem) as unit tests; demonstrate them in the demo.</li>
+  </ol>
+
+  <div class="box insight"><span class="lbl">The meta-strategy</span>
+  With only 3 submissions and no live leaderboard, <strong>you cannot grind the metric.</strong> You must be <em>right by reasoning</em>. That favors teams who deeply understand the problem (this document) over teams who submit-and-pray. Validate offline with your own synthetic ground truth and the trap test-suite; trust the analysis, not a leaderboard.</p></div>
+</div>
+
+<!-- ============ 8. ROADMAP ============ -->
+<div class="page">
+  <span class="section-tag">Section 8</span>
+  <h2>Roadmap, Risks &amp; KPIs</h2>
+
+  <h3>8.1 Execution roadmap</h3>
+  <table>
+    <tr><th>Phase</th><th>Days</th><th>Deliverable</th><th>Definition of done</th></tr>
+    <tr><td><strong>P0 — Foundations</strong></td><td>1&ndash;2</td><td>Repo, data loader, validator-in-CI, EDA on full pool</td><td>Can load 100K, profile distributions, validator passes on a dummy CSV.</td></tr>
+    <tr><td><strong>P1 — Baselines</strong></td><td>3&ndash;4</td><td>BM25 + dense retrieval; RRF hybrid shortlist</td><td>Plausible top-1K for the JD; visibly better than sample submission.</td></tr>
+    <tr><td><strong>P2 — Council of Nine</strong></td><td>5&ndash;8</td><td>Nine sub-scorers + integrity layer + behavioral modifier</td><td>Trap test-suite passes (gem &gt; stuffer; 0 honeypots in top 100).</td></tr>
+    <tr><td><strong>P3 — Re-rank &amp; calibrate</strong></td><td>9&ndash;11</td><td>LTR/cross-encoder re-rank; score calibration; tie-break</td><td>Stable, monotonic top-100; ablation shows each component helps.</td></tr>
+    <tr><td><strong>P4 — Reasoning &amp; reproducibility</strong></td><td>12&ndash;13</td><td>Grounded reasoning generator; one-command pipeline; sandbox demo</td><td>&le;5 min CPU run; Stage-4 reasoning checks self-audited.</td></tr>
+    <tr><td><strong>P5 — Harden &amp; submit</strong></td><td>14</td><td>Docs, methodology summary, metadata yaml, final validation</td><td>Reproduced clean on a second machine; submitted.</td></tr>
+  </table>
+
+  <h3>8.2 Risk register</h3>
+  <table>
+    <tr><th>Risk</th><th>Impact</th><th>Mitigation</th></tr>
+    <tr><td>Embedding model too heavy for CPU/5-min</td><td>Stage-3 DQ</td><td>Use a small quantized model (e.g., bge-small / MiniLM); precompute; benchmark early.</td></tr>
+    <tr><td>Honeypots slip into top 100</td><td>Disqualification</td><td>Dedicated integrity layer + explicit honeypot unit tests.</td></tr>
+    <tr><td>Over-fitting reasoning to templates</td><td>Stage-4 penalty</td><td>Fact-grounded, varied generation; manual spot-checks.</td></tr>
+    <tr><td>No ground truth for tuning</td><td>Blind optimization</td><td>Synthetic relevance tiers from JD intent + trap test-suite as proxy.</td></tr>
+    <tr><td>Behavioral signals overpower skill fit</td><td>Wrong ranking</td><td>Bound the modifier; never let it flip a strong-vs-weak skills gap.</td></tr>
+  </table>
+
+  <h3>8.3 KPIs we track internally</h3>
+  <ul>
+    <li><strong>Primary:</strong> offline composite (0.5&middot;NDCG@10 + 0.3&middot;NDCG@50 + 0.15&middot;MAP + 0.05&middot;P@10) on our synthetic ground truth.</li>
+    <li><strong>Integrity:</strong> honeypot count in top 100 (target 0), keyword-stuffer count in top 20 (target 0).</li>
+    <li><strong>Trap suite:</strong> % of JD-derived unit tests passing (target 100%).</li>
+    <li><strong>Ops:</strong> wall-clock ranking time (target &lt; 3 min, margin under the 5-min cap), peak RAM (&lt; 16 GB).</li>
+    <li><strong>Reasoning:</strong> self-audit pass rate on the six Stage-4 checks (target 100% on a 20-row sample).</li>
+  </ul>
+</div>
+
+<!-- ============ 9. APPENDICES ============ -->
+<div class="page">
+  <span class="section-tag">Section 9</span>
+  <h2>Appendices</h2>
+
+  <h3>A. Recommended stack (all CPU-friendly, offline-capable)</h3>
+  <table>
+    <tr><th>Layer</th><th>Choice</th><th>Why</th></tr>
+    <tr><td>Language</td><td>Python 3.11</td><td>JD-aligned; ecosystem.</td></tr>
+    <tr><td>Lexical</td><td><code>rank_bm25</code> or Elasticsearch-lite / <code>bm25s</code></td><td>Fast, dependency-light BM25.</td></tr>
+    <tr><td>Embeddings</td><td><code>sentence-transformers</code> with <code>bge-small-en</code> / <code>e5-small</code> (ONNX/quantized)</td><td>Strong quality at CPU-feasible size.</td></tr>
+    <tr><td>Vector index</td><td><code>faiss-cpu</code> (flat or IVF-PQ)</td><td>Fast offline; loads in seconds.</td></tr>
+    <tr><td>Re-rank / LTR</td><td><code>cross-encoder/ms-marco-MiniLM</code> or <code>LightGBM</code> LambdaRank</td><td>Accurate on top-K; CPU-fast; explainable.</td></tr>
+    <tr><td>Data</td><td>pandas / numpy / orjson</td><td>Vectorized features; fast JSONL parsing.</td></tr>
+    <tr><td>Demo / sandbox</td><td>Streamlit on HuggingFace Spaces</td><td>Meets the mandatory sandbox requirement.</td></tr>
+  </table>
+
+  <h3>B. Suggested repository structure</h3>
+  <pre style="background:var(--soft);color:var(--ink);border:1px solid var(--line);padding:12px;border-radius:8px;font-size:8.6pt;">
+redrob-ranker/
+├── README.md                  # setup + single reproduce command
+├── requirements.txt
+├── submission_metadata.yaml
+├── rank.py                    # entrypoint: --candidates --out
+├── src/
+│   ├── load.py                # JSONL parse + normalize
+│   ├── features.py            # derived features, skill-trust, tenure
+│   ├── jd_intent.json         # structured JD interpretation (static)
+│   ├── retrieve.py            # BM25 + FAISS + RRF
+│   ├── council.py             # the nine sub-scorers
+│   ├── integrity.py           # honeypot / plausibility checks
+│   ├── rerank.py              # LTR / cross-encoder
+│   ├── reasoning.py           # grounded reasoning generator
+│   └── score.py               # fusion, calibration, tie-break
+├── artifacts/                 # precomputed embeddings + indexes
+├── tests/
+│   ├── test_traps.py          # gem > stuffer; 0 honeypots
+│   └── test_format.py         # wraps validate_submission.py
+└── precompute.py              # offline: build artifacts/
+  </pre>
+
+  <h3>C. The reproduce command (Stage-3 contract)</h3>
+  <pre style="background:var(--navy);color:#d9f2ee;padding:12px;border-radius:8px;font-size:8.8pt;">
+# offline (once, may exceed 5 min):
+python precompute.py --candidates ./candidates.jsonl --out ./artifacts
+
+# online (≤5 min, CPU, no network):
+python rank.py --candidates ./candidates.jsonl --out ./submission.csv
+python validate_submission.py submission.csv      # must print "Submission is valid."
+  </pre>
+
+  <h3>D. Glossary</h3>
+  <div class="two-col" style="font-size:9pt;">
+    <p><strong>NDCG</strong> — Normalized Discounted Cumulative Gain; rewards putting more-relevant items higher.<br>
+    <strong>MAP</strong> — Mean Average Precision across relevant items.<br>
+    <strong>P@k</strong> — Precision among the top k.<br>
+    <strong>BM25</strong> — classic lexical ranking function.<br>
+    <strong>Dense retrieval</strong> — embedding-based semantic search.<br>
+    <strong>RRF</strong> — Reciprocal Rank Fusion; combines multiple rankings.<br>
+    <strong>Cross-encoder</strong> — reads query+doc jointly for an accurate fit score.<br>
+    <strong>LTR / LambdaMART</strong> — models trained to optimize ranking metrics directly.<br>
+    <strong>Honeypot</strong> — a deliberately impossible decoy profile.<br>
+    <strong>Keyword stuffer</strong> — profile padded with trendy terms it can't back up.<br>
+    <strong>Honne / Tatemae</strong> — (Japanese) true feelings vs. public face.<br>
+    <strong>Zhengming</strong> — (Confucian) "rectification of names": title must fit reality.<br>
+    <strong>Neti-neti</strong> — (Vedantic) "not this, not this": definition by elimination.<br>
+    <strong>Navaratna</strong> — the nine gems; our nine-scorer ensemble.</p>
+  </div>
+
+  <hr>
+  <div class="box win"><span class="lbl">Closing</span>
+  This blueprint turns a ranking contest into a <strong>judgment engine</strong>. The dataset rewards teams who <em>read</em> rather than <em>match</em>; the rules reward teams who <em>engineer</em> rather than <em>prompt</em>; the human stages reward teams who can <em>explain</em>. Our Council-of-Nine architecture is built to win on all three — accurate, fast, trap-proof, and unforgettable.</p></div>
+
+  <div class="footer-note">The AI Recruiting Brain &mdash; Strategy &amp; Implementation Blueprint &bull; Prepared for the Redrob Intelligent Candidate Discovery &amp; Ranking Challenge &bull; v1.0, June 2026.<br>This document synthesizes a full read of the challenge bundle (job description, submission spec, signals reference, schema) and an empirical sample analysis of the 100,000-candidate pool.</div>
+</div>
+
+</body>
+</html>
