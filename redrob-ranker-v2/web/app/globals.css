@@ -1,0 +1,27 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body { height: 100%; }
+body {
+  background: theme(colors.canvas);
+  color: theme(colors.ink.DEFAULT);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* thin custom scrollbars (Stripe-like) */
+*::-webkit-scrollbar { width: 9px; height: 9px; }
+*::-webkit-scrollbar-thumb { background: #d4dae3; border-radius: 8px; }
+*::-webkit-scrollbar-thumb:hover { background: #b9c2cf; }
+*::-webkit-scrollbar-track { background: transparent; }
+
+@layer components {
+  .card { @apply bg-white border border-line rounded-xl shadow-card; }
+  .btn { @apply inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold transition; }
+  .btn-primary { @apply btn bg-brand text-white hover:bg-brand-dark shadow-sm; }
+  .btn-ghost { @apply btn bg-white border border-line text-ink-soft hover:bg-gray-50; }
+  .pill { @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold; }
+  .navitem { @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-ink-muted hover:bg-gray-50 hover:text-ink cursor-pointer transition; }
+  .navitem-active { @apply bg-brand-wash text-brand-dark hover:bg-brand-wash hover:text-brand-dark; }
+}

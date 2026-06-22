@@ -45,12 +45,36 @@ def iter_candidates(path: str) -> Iterator[dict]:
                 continue
 
 
+def _looks_like_json_array(path: str) -> bool:
+    """Peek the first non-whitespace byte to detect a pretty-printed JSON array."""
+    try:
+        with _open_any(path) as f:
+            while True:
+                ch = f.read(1)
+                if ch == "":
+                    return False
+                if not ch.isspace():
+                    return ch == "["
+    except Exception:
+        return False
+
+
 def load_candidates(path: str, limit: int | None = None) -> List[dict]:
-    """Load all (or the first `limit`) candidates into a list."""
+    """Load candidates from JSONL (one object per line) OR a JSON array file."""
     if not os.path.exists(path):
         raise FileNotFoundError(f"Candidate file not found: {path}")
+
+    # JSON array (e.g. sample_candidates.json) — parse the whole document.
+    if _looks_like_json_array(path):
+        with _open_any(path) as f:
+            data = _json.loads(f.read())
+        if isinstance(data, list):
+            return data[:limit] if limit is not None else data
+        return []
+
+    # JSONL — stream line by line.
     out: List[dict] = []
-    for i, c in enumerate(iter_candidates(path)):
+    for c in iter_candidates(path):
         out.append(c)
         if limit is not None and len(out) >= limit:
             break

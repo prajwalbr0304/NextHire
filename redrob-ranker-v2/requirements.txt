@@ -5,6 +5,13 @@ scipy>=1.11
 scikit-learn>=1.4
 orjson>=3.9
 PyYAML>=6.0
+pandas>=2.0
+openpyxl>=3.1
+
+# --- API backend (FastAPI) for the Next.js frontend (web/) ---
+fastapi>=0.115
+uvicorn>=0.30
+python-multipart>=0.0.9
 
 # --- Optional upgrades from the blueprint (NOT required to run rank.py) ---
 # Uncomment to enable the heavier 2026 backends described in the blueprint.
