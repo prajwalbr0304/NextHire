@@ -7,10 +7,10 @@ Run:  uvicorn api.main:app --port 8000   (from the redrob-ranker-v2 root)
 from __future__ import annotations
 
 import os
+import shutil
 import sys
-import tempfile
 
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Query
+from fastapi import FastAPI, UploadFile, File, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
@@ -76,29 +76,37 @@ def rank(req: RankRequest):
 
 @app.post("/api/stage")
 async def stage(file: UploadFile = File(...)):
-    """Drag-and-drop upload: save the file and mark it for the next ranking."""
-    tmp = None
+    """Drag-and-drop upload: stream the file to a writable, cross-platform
+    location (chunked, so even a 500 MB pool never loads fully into RAM) and
+    mark it for the next ranking. No hardcoded paths — uses ranker.UPLOAD_DIR
+    (OS temp dir by default, overridable via REDROB_UPLOAD_DIR)."""
+    name = os.path.basename(file.filename or "upload.jsonl")
+    ext = ".jsonl" if name.lower().endswith(".jsonl") else ".json"
+    dest = None
     try:
-        name = file.filename or "upload.jsonl"
-        suffix = ".jsonl" if name.lower().endswith("l") else ".json"
-        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
-        data = await file.read()
-        tmp.write(data)
-        tmp.close()
-        ranker.set_staged(tmp.name, name)
-        return {"filename": name, "size_mb": round(len(data) / 1e6, 1)}
+        os.makedirs(ranker.UPLOAD_DIR, exist_ok=True)
+        dest = os.path.join(ranker.UPLOAD_DIR, "staged" + ext)
+        # stream in 1 MB chunks — memory-safe for very large files
+        with open(dest, "wb") as out:
+            shutil.copyfileobj(file.file, out, length=1024 * 1024)
+        size = os.path.getsize(dest)
+        if size == 0:
+            raise ValueError("uploaded file is empty")
+        ranker.set_staged(dest, name)
+        return {"filename": name, "size_mb": round(size / 1e6, 1)}
     except Exception as e:
-        # Clean up temporary file if it was created
-        if tmp is not None:
+        if dest and os.path.exists(dest):
             try:
-                tmp.close()
-                if hasattr(tmp, 'name') and tmp.name:
-                    os.unlink(tmp.name)
-            except:
-                pass  # Ignore cleanup errors
-        # Log the error for debugging
-        print(f"File upload error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Internal server error during file upload: {str(e)}")
+                os.unlink(dest)
+            except OSError:
+                pass
+        ranker.log("error", f"Upload failed for '{name}': {type(e).__name__}: {e}")
+        raise HTTPException(status_code=500, detail=f"Upload failed: {type(e).__name__}: {e}")
+    finally:
+        try:
+            await file.close()
+        except Exception:
+            pass
 
 
 @app.get("/api/logs")

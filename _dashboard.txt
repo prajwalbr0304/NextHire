@@ -1,0 +1,19 @@
+URL: https://auth.redrob.io/collab?referralCode=H2SXREDROB&response_type=code&redirect_uri=https%3A%2F%2Fhack2skill.com%2Fapi%2Fv1%2Fauth%2Fredrob%2Fcallback&scope=openid%20profile%20email%20phone&state=34180b6279ae46b695e4ba8901cac5476fcc416564e77a8a6209a5f3b0f600a9&client_id=630d4c5e-94d2-4197-94df-7bf3b4ff1ad1
+
+Signup using Redrob for
+
+INDIA.RUNS
+
+Build what next India runs on
+
+First name
+Last name
+Email
+Send OTP
+Phone number
++91
+Send OTP
+I agree to Terms of Use and Privacy Policy
+Create Account
+
+Proudly Built in India 🇮🇳

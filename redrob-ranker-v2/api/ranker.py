@@ -12,6 +12,7 @@ import datetime as _dt
 import io
 import os
 import sys
+import tempfile
 import threading
 import time
 from collections import Counter, deque
@@ -43,6 +44,11 @@ COUNCIL_LABELS = {
 
 DEFAULT_FILE = os.environ.get("REDROB_CANDIDATES",
                               os.path.join(REPO_ROOT, "sample_candidates.jsonl"))
+
+# Cross-platform, non-hardcoded upload location (overridable via env).
+# Defaults to the OS temp dir so it is writable on any device/OS.
+UPLOAD_DIR = os.environ.get("REDROB_UPLOAD_DIR",
+                            os.path.join(tempfile.gettempdir(), "redrob_uploads"))
 
 # ---------------------------------------------------------------------------
 # In-memory state (single active ranking — this is a local single-user tool)
