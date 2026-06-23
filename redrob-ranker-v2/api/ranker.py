@@ -42,7 +42,7 @@ COUNCIL_LABELS = {
 }
 
 DEFAULT_FILE = os.environ.get("REDROB_CANDIDATES",
-                              r"C:\Users\prajbr\Desktop\candidates.jsonl")
+                              os.path.join(REPO_ROOT, "sample_candidates.jsonl"))
 
 # ---------------------------------------------------------------------------
 # In-memory state (single active ranking — this is a local single-user tool)

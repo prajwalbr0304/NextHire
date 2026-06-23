@@ -32,7 +32,10 @@ export const api = {
     const fd = new FormData();
     fd.append("file", file);
     const r = await fetch("/api/stage", { method: "POST", body: fd });
-    if (!r.ok) throw new Error(await r.text());
+    if (!r.ok) {
+      const errorText = await r.text();
+      throw new Error(errorText || "File upload failed");
+    }
     return r.json() as Promise<{ filename: string; size_mb: number }>;
   },
   exportUrl: (n: number) => `/api/export?n=${n}`,

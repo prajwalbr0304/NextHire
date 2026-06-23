@@ -60,6 +60,8 @@ export default function Page() {
   const [dirty, setDirty] = useState(false);
   const [staged, setStaged] = useState<{ name: string; size_mb: number } | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [showUploadError, setShowUploadError] = useState(false);
+  const [uploadErrorMessage, setUploadErrorMessage] = useState("");
   const [feLogs, setFeLogs] = useState<Log[]>([]);
   const [beLogs, setBeLogs] = useState<Log[]>([]);
   const poll = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -113,14 +115,21 @@ export default function Page() {
     const mb = (file.size / 1e6).toFixed(1);
     flog("info", `Staging '${file.name}' (${mb} MB)…`);
     setUploading(true);
+    setShowUploadError(false);
+    setUploadErrorMessage("");
     try {
       const r = await api.stage(file);
       setStaged({ name: r.filename, size_mb: r.size_mb });
       setDirty(true);
       flog("success", `Uploaded '${r.filename}' (${r.size_mb} MB) — ready to rank`);
       api.logs().then((x) => setBeLogs(x.logs)).catch(() => {});
-    } catch (e) {
-      flog("error", `Upload failed: ${e}`);
+    } catch (e: any) {
+      flog("error", `Upload failed: ${e.message || e.toString() || "Unknown error occurred"}`);
+      // Show error in UI
+      const errorMessage = e.message || e.toString() || "Unknown error occurred";
+      setShowUploadError(true);
+      setUploadErrorMessage(errorMessage);
+      console.error("Upload failed:", errorMessage);
     } finally { setUploading(false); }
   }, [flog]);
 
@@ -197,6 +206,7 @@ export default function Page() {
           search={search} setSearch={setSearch} onRank={onRank} running={running} />
 
         <div className="px-7 py-6 space-y-5">
+          {/* Toast Notifications */}
           {/* title row */}
           <div className="flex items-end justify-between gap-4 flex-wrap">
             <div>
@@ -225,7 +235,8 @@ export default function Page() {
             </div>
           </div>
 
-          <IngestBanner status={status} staged={staged} uploading={uploading} onFile={onFile} />
+          <IngestBanner status={status} staged={staged} uploading={uploading} onFile={onFile} 
+            showError={showUploadError} errorMessage={uploadErrorMessage} />
 
           {ready && summary ? <Kpis s={summary} /> : <KpiSkeleton running={running} />}
 

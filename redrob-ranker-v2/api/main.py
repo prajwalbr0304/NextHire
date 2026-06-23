@@ -77,14 +77,28 @@ def rank(req: RankRequest):
 @app.post("/api/stage")
 async def stage(file: UploadFile = File(...)):
     """Drag-and-drop upload: save the file and mark it for the next ranking."""
-    name = file.filename or "upload.jsonl"
-    suffix = ".jsonl" if name.lower().endswith("l") else ".json"
-    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
-    data = await file.read()
-    tmp.write(data)
-    tmp.close()
-    ranker.set_staged(tmp.name, name)
-    return {"filename": name, "size_mb": round(len(data) / 1e6, 1)}
+    tmp = None
+    try:
+        name = file.filename or "upload.jsonl"
+        suffix = ".jsonl" if name.lower().endswith("l") else ".json"
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+        data = await file.read()
+        tmp.write(data)
+        tmp.close()
+        ranker.set_staged(tmp.name, name)
+        return {"filename": name, "size_mb": round(len(data) / 1e6, 1)}
+    except Exception as e:
+        # Clean up temporary file if it was created
+        if tmp is not None:
+            try:
+                tmp.close()
+                if hasattr(tmp, 'name') and tmp.name:
+                    os.unlink(tmp.name)
+            except:
+                pass  # Ignore cleanup errors
+        # Log the error for debugging
+        print(f"File upload error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Internal server error during file upload: {str(e)}")
 
 
 @app.get("/api/logs")
