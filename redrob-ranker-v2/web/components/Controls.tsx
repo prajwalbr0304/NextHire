@@ -11,12 +11,12 @@ export type Params = {
 };
 
 const WEIGHT_META: { key: keyof Weights; icon: string; label: string; sub: string; color: string }[] = [
-  { key: "semantic_seer", icon: "👁", label: "Semantic Seer", sub: "Wu Wei · semantic fit", color: "#635bff" },
-  { key: "name_rectifier", icon: "孔", label: "Name-Rectifier", sub: "Confucius · title ↔ reality", color: "#f59e0b" },
-  { key: "evidence_scout", icon: "🗡", label: "Evidence Scout", sub: "Kautilya · shipped systems", color: "#10b981" },
-  { key: "mask_piercer", icon: "🎭", label: "Mask-Piercer", sub: "Honne/Tatemae · skill trust", color: "#ec4899" },
-  { key: "path_reader", icon: "🥋", label: "Path-Reader", sub: "Shu-Ha-Ri · YOE / tenure", color: "#06b6d4" },
-  { key: "terrain_master", icon: "⚔", label: "Terrain Master", sub: "Sun Tzu · domain / product", color: "#8b5cf6" },
+  { key: "semantic_seer", icon: "👁", label: "Role-Signal Alignment", sub: "semantic fit to JD", color: "#635bff" },
+  { key: "name_rectifier", icon: "孔", label: "Title Calibration Index", sub: "declared title vs. actual scope", color: "#f59e0b" },
+  { key: "evidence_scout", icon: "🗡", label: "Delivery Velocity", sub: "shipped systems & impact evidence", color: "#10b981" },
+  { key: "mask_piercer", icon: "🎭", label: "Declared vs. Demonstrated Skill", sub: "self-assessment trust coefficient", color: "#ec4899" },
+  { key: "path_reader", icon: "🥋", label: "Tenure & Progression Depth", sub: "YOE and seniority trajectory", color: "#06b6d4" },
+  { key: "terrain_master", icon: "⚔", label: "Domain Density", sub: "product/industry depth score", color: "#8b5cf6" },
 ];
 
 function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {

@@ -4,8 +4,8 @@ import { IconClose } from "./icons";
 
 const CK = ["semantic_seer", "name_rectifier", "evidence_scout", "mask_piercer", "path_reader", "terrain_master"] as const;
 const LABEL: Record<string, string> = {
-  semantic_seer: "Semantic Seer", name_rectifier: "Name-Rectifier", evidence_scout: "Evidence Scout",
-  mask_piercer: "Mask-Piercer", path_reader: "Path-Reader", terrain_master: "Terrain Master",
+  semantic_seer: "Role-Signal Alignment", name_rectifier: "Title Calibration Index", evidence_scout: "Delivery Velocity",
+  mask_piercer: "Declared vs. Demonstrated Skill", path_reader: "Tenure & Progression Depth", terrain_master: "Domain Density",
 };
 
 export default function CandidateDrawer({ d, loading, onClose }:
