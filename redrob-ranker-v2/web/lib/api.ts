@@ -12,6 +12,7 @@ export const api = {
   roles: () => get<{ roles: string[]; default_file: string; default_file_exists: boolean }>("/api/roles"),
   status: () => get<Status>("/api/status"),
   summary: () => get<Summary>("/api/summary"),
+  staged: () => get<{ name: string | null; size_mb: number | null; path: string | null }>("/api/staged"),
   leaderboard: (page: number, size = 100, q = "") =>
     get<Leaderboard>(`/api/leaderboard?page=${page}&size=${size}&q=${encodeURIComponent(q)}`),
   candidate: (id: string) => get<Detail>(`/api/candidate/${id}`),

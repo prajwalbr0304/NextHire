@@ -119,6 +119,11 @@ def get_status():
     return ranker.status()
 
 
+@app.get("/api/staged")
+def get_staged():
+    return ranker.staged()
+
+
 @app.get("/api/summary")
 def get_summary():
     return ranker.summary()

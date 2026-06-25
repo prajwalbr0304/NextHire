@@ -110,6 +110,18 @@ def status() -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Get staged file info (for frontend state persistence on refresh)
+# ---------------------------------------------------------------------------
+def staged() -> dict:
+    return {
+        "name": STAGED.get("name"),
+        "size_mb": STAGED.get("size_mb"),
+        "path": STAGED.get("path"),
+    }
+
+
+
+# ---------------------------------------------------------------------------
 # Ranking (mirrors app.rank_all — ranks the WHOLE pool, not just top 100)
 # ---------------------------------------------------------------------------
 def _do_rank(file_path: str, role_name: str, weights: dict, params: dict):

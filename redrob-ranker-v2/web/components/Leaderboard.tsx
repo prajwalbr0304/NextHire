@@ -42,7 +42,7 @@ function ActionMenu({ candidateId, onView }: { candidateId: string; onView: (id:
   }, []);
 
   return (
-    <div className="relative flex items-center justify-end gap-2 w-full" ref={menuRef}>
+    <div className="relative flex items-center gap-2 w-full pl-2" ref={menuRef}>
       <button
         onClick={(e) => {
           e.stopPropagation();
@@ -104,10 +104,10 @@ export default function Leaderboard({
         <div className="text-center" style={{ width: '40px' }}>Rank</div>
         <div style={{ width: '160px' }}>Candidate ID</div>
         <div style={{ width: '280px' }}>Current Role</div>
-        <div className="text-right" style={{ width: '60px' }}>Score</div>
-        <div className="text-center" style={{ width: '100px' }}>Experience</div>
-        <div className="text-center" style={{ width: '100px' }}>Notice Period</div>
-        <div className="text-center" style={{ width: '140px' }}>Actions</div>
+        <div className="text-center" style={{ width: '80px' }}>Score</div>
+        <div className="text-center" style={{ width: '140px' }}>Experience</div>
+        <div className="text-center" style={{ width: '140px' }}>Notice Period</div>
+        <div className="pl-2" style={{ width: '180px' }}>Actions</div>
       </div>
       
       {/* Body */}
@@ -143,26 +143,26 @@ export default function Leaderboard({
             </div>
             
             {/* Score */}
-            <div className="text-right" style={{ width: '60px' }}>
+            <div className="text-center" style={{ width: '80px' }}>
               <span className="text-sm font-bold text-gray-900">
                 {r.score.toFixed(0)}
               </span>
             </div>
             
             {/* Experience */}
-            <div className="text-center" style={{ width: '100px' }}>
+            <div className="text-center" style={{ width: '140px' }}>
               <span className="text-sm font-medium text-gray-700">
                 {r.yoe !== null ? `${r.yoe.toFixed(1)} yrs` : "—"}
               </span>
             </div>
             
             {/* Notice Period */}
-            <div className="text-center" style={{ width: '100px' }}>
+            <div className="text-center" style={{ width: '140px' }}>
               <NoticeBadge days={r.notice_days} />
             </div>
             
             {/* Actions */}
-            <div className="text-center" style={{ width: '140px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="text-center" style={{ width: '180px' }} onClick={(e) => e.stopPropagation()}>
               <ActionMenu candidateId={r.candidate_id} onView={onSelect} />
             </div>
           </div>

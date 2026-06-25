@@ -88,6 +88,19 @@ export default function Page() {
       flog("success", `Loaded ${r.roles.length} job roles · default dataset ${r.default_file_exists ? "found" : "missing"}`);
     }).catch(() => flog("error", "Could not reach backend /api/roles"));
     api.status().then((s) => { setStatus(s); if (s.status === "done") refreshAll(); }).catch(() => {});
+    // Restore staged file info on page refresh
+    api.staged().then((stagedData) => {
+      if (stagedData.name && stagedData.size_mb) {
+        setStaged({ name: stagedData.name, size_mb: stagedData.size_mb });
+        // Also set hasRanked to true if there was a previous ranking (status is done)
+        api.status().then((s) => {
+          if (s.status === "done") {
+            setHasRanked(true);
+            refreshAll();
+          }
+        }).catch(() => {});
+      }
+    }).catch(() => {});
     api.logs().then((r) => setBeLogs(r.logs)).catch(() => {});
     return () => { if (poll.current) clearInterval(poll.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -285,9 +298,14 @@ export default function Page() {
               <button
                 onClick={onRank}
                 disabled={running || !role}
-                className="btn-primary disabled:opacity-50"
+                className="btn-primary disabled:opacity-50 flex items-center gap-2"
               >
-                {running ? "Ranking..." : (hasRanked && dirty) ? "Re-rank" : "Rank Candidates"}
+                {running ? "Ranking..." : (hasRanked && dirty) ? (
+                  <>
+                    <IconRefresh className="h-4 w-4" />
+                    Re-rank
+                  </>
+                ) : "Rank Candidates"}
               </button>
 
               {/* Error message */}
