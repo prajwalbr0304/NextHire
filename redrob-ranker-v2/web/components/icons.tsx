@@ -26,6 +26,11 @@ export const IconTerminal = (p: P) => (<S {...p}><rect x="3" y="4" width="18" he
 export const IconFile = (p: P) => (<S {...p}><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5z"/><path d="M14 3v5h5"/></S>);
 export const IconWrench = (p: P) => (<S {...p}><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></S>);
 export const IconDots = (p: P) => (<S {...p}><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></S>);
+export const IconPlus = (p: P) => (<S {...p}><path d="M12 5v14M5 12h14"/></S>);
+export const IconTrash = (p: P) => (<S {...p}><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></S>);
+export const IconSend = (p: P) => (<S {...p}><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></S>);
+export const IconDatabase = (p: P) => (<S {...p}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></S>);
+export const IconLayers = (p: P) => (<S {...p}><path d="M12 2l9 5-9 5-9-5 9-5z"/><path d="M3 12l9 5 9-5"/><path d="M3 17l9 5 9-5"/></S>);
 export const IconEye = (p: P) => (<S {...p}><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></S>);
 export const IconCompare = (p: P) => (<S {...p}><rect x="2" y="8" width="8" height="13" rx="1"/><rect x="14" y="8" width="8" height="13" rx="1"/><path d="M10 8V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3"/><path d="M10 16v3a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-3"/><path d="M14 16v3a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-3"/></S>);
 export const IconStar = ({ className, filled }: P & { filled?: boolean }) => (

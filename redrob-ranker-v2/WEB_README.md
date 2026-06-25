@@ -48,6 +48,35 @@ job-intent views.
 - Excel export with a selectable number of candidates
 - Scoring-weights donut
 
+## New capabilities (this build)
+
+- **Insights & Analytics** — score distribution (area), experience (bars), skills
+  heatmap (proficiency grid), education analysis (degrees/fields/tiers), top skills
+  (verified vs claimed), recruitment funnel, Council radar, geographic & company mix.
+- **Governance & Compliance** — fairness checks, bias detection (4/5ths rule + score
+  gaps), per-group fairness metrics, and a full **explainable-scoring** breakdown.
+- **Compare** — pick up to 4 candidates (from the leaderboard or by search) and compare
+  them in vertical category tables (overview, experience, Council scores, signals,
+  skills, education, reasoning) with best-in-row highlighting.
+- **Pipeline** — pick a stored ranking task from a dropdown, then create shortlists and
+  add candidates to them. Backed by Supabase.
+- **NextAI** — chat assistant grounded in the live rank list (provider-agnostic LLM).
+
+## Persistence & setup (Supabase)
+
+Every ranking run is stored automatically with a unique `task_id`: the task metadata,
+the **top 200**, **shortlisted** (score ≥ 85) and **honeypot** candidates, plus three
+auto-seeded shortlists.
+
+1. In the Supabase SQL Editor, run `supabase_schema.sql` (project root) — once.
+2. Copy `.env.example` → `.env` (project root) and set `NEXT_PUBLIC_SUPABASE_URL` and
+   `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY`.
+3. (Optional) Set `NEXTAI_PROVIDER` + `NEXTAI_API_KEY` to enable the NextAI assistant.
+4. Restart the API server. New endpoints: `GET /api/db-status`, `GET /api/tasks`,
+   `GET /api/tasks/{id}`, `GET /api/tasks/{id}/candidates`, `GET /api/tasks/{id}/shortlists`,
+   `POST /api/shortlists`, `POST /api/shortlists/{id}/members`, `DELETE /api/shortlist-members/{id}`,
+   `GET /api/nextai/status`, `POST /api/nextai/chat`.
+
 ## API endpoints
 
 `GET /api/roles` · `POST /api/rank` · `POST /api/upload` · `GET /api/status` ·

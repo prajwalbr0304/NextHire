@@ -15,6 +15,7 @@ import sys
 import tempfile
 import threading
 import time
+import uuid
 from collections import Counter, deque
 
 import numpy as np
@@ -33,6 +34,7 @@ from src.retrieve import build_retriever                       # noqa: E402
 from src.score import _soft_nudge                              # noqa: E402
 from src.skills_verify import verified_relevant_skills         # noqa: E402
 from src.load import load_candidates                           # noqa: E402
+from api import supabase_store                                 # noqa: E402
 
 COUNCIL_KEYS = ["semantic_seer", "name_rectifier", "evidence_scout",
                 "mask_piercer", "path_reader", "terrain_master"]
@@ -64,9 +66,13 @@ STATE = {
     "runtime": 0.0,
     "started_at": None,
     "weights": dict(config.COUNCIL_WEIGHTS),
+    "params": {},                # ranking params used (yoe bands, notice, toggles)
     "rows": [],                  # [(score, candidate, features, dec, integ), ...]
     "honeypots": [],             # [(candidate, integ), ...]
     "id_index": {},              # candidate_id -> row index
+    "task_id": None,             # unique id for the current ranking run
+    "task_name": None,           # human-friendly label
+    "persisted": False,          # whether this run was saved to Supabase
 }
 
 
@@ -91,6 +97,10 @@ def get_logs() -> list:
     return list(LOGS)
 
 
+# Let the Supabase client write into the same activity log.
+supabase_store.set_logger(log)
+
+
 def set_staged(path: str, name: str):
     size = round(os.path.getsize(path) / 1e6, 1) if os.path.exists(path) else None
     STAGED.update(path=path, name=name, size_mb=size)
@@ -106,6 +116,8 @@ def status() -> dict:
         "file_size_mb": s["file_size_mb"], "ingested": s["ingested"],
         "ranked": len(s["rows"]), "honeypots": len(s["honeypots"]),
         "runtime": round(elapsed, 1),
+        "task_id": s["task_id"], "task_name": s["task_name"],
+        "persisted": s["persisted"],
     }
 
 
@@ -128,13 +140,18 @@ def _do_rank(file_path: str, role_name: str, weights: dict, params: dict):
     try:
         t_run = time.time()
         size_mb = round(os.path.getsize(file_path) / 1e6, 1) if os.path.exists(file_path) else None
+        task_id = "t_" + _dt.datetime.now().strftime("%Y%m%d_%H%M%S") + "_" + uuid.uuid4().hex[:6]
+        task_name = f"{role_name} · {_dt.datetime.now().strftime('%b %d, %H:%M')}"
         with _lock:
             STATE.update(status="running", message="Loading candidates…",
                          role=role_name, file=file_path, rows=[], honeypots=[],
-                         id_index={}, started_at=t_run, ingested=0)
+                         id_index={}, started_at=t_run, ingested=0,
+                         task_id=task_id, task_name=task_name, persisted=False,
+                         params=dict(params or {}))
             STATE["file_size_mb"] = size_mb
 
         log("info", "─" * 3 + " New ranking run started " + "─" * 3)
+        log("info", f"Task ID: {task_id}")
         log("info", f"Target role: '{role_name}'")
         log("info", f"Dataset: {os.path.basename(file_path)} ({size_mb} MB) · streamed from disk")
 
@@ -221,11 +238,88 @@ def _do_rank(file_path: str, role_name: str, weights: dict, params: dict):
             log("success", f"Top pick: {top.get('current_title','?')} "
                            f"({rows[0][1].get('candidate_id')}) · score {rows[0][0]*100:.0f}")
         log("success", f"✓ Ranking complete · {len(rows):,} ranked · {runtime}s · CPU · offline")
+
+        # Persist this run to Supabase (best-effort; never blocks the result).
+        _persist_run(task_id, task_name)
     except Exception as e:  # pragma: no cover
         with _lock:
             STATE["status"] = "error"
             STATE["message"] = f"{type(e).__name__}: {e}"
         log("error", f"Ranking failed: {type(e).__name__}: {e}")
+
+
+# ---------------------------------------------------------------------------
+# Persist a completed ranking to Supabase (task + top200 / shortlisted / honeypot)
+# ---------------------------------------------------------------------------
+def _store_row(rank: int, score: float, c: dict, f: dict, dec: dict, integ, jd: dict) -> dict:
+    p = c.get("profile", {}) or {}
+    yoe = p.get("years_of_experience")
+    return {
+        "rank": rank,
+        "candidate_id": c.get("candidate_id"),
+        "score": round(float(score) * 100, 1),
+        "current_title": p.get("current_title"),
+        "current_company": p.get("current_company"),
+        "years_experience": float(yoe) if yoe is not None else None,
+        "location": p.get("location"),
+        "country": p.get("country"),
+        "verified_skills": ", ".join(verified_relevant_skills(c, jd, top=8)),
+        "council": {k: round(float(dec["parts"][k]), 3) for k in COUNCIL_KEYS},
+        "notice_days": int(f["notice_days"]),
+        "reasoning": gen_reason(c, f, dec, integ, score, rank, jd),
+    }
+
+
+def _persist_run(task_id: str, task_name: str) -> None:
+    if not supabase_store.enabled():
+        log("info", "Supabase not configured — skipping cloud persistence "
+                    "(run supabase_schema.sql and set .env to enable).")
+        return
+    try:
+        rows = STATE["rows"]
+        jd = _jd()
+        strong = sum(1 for r in rows if r[0] * 100 >= 85)
+        meta = {
+            "task_id": task_id,
+            "name": task_name,
+            "role": STATE["role"],
+            "file_name": os.path.basename(STATE["file"]) if STATE["file"] else None,
+            "file_size_mb": STATE["file_size_mb"],
+            "ingested": STATE["ingested"],
+            "ranked": len(rows),
+            "honeypots": len(STATE["honeypots"]),
+            "strong_matches": strong,
+            "runtime": STATE["runtime"],
+            "weights": STATE["weights"],
+            "params": STATE.get("params", {}),
+        }
+        top200 = [_store_row(i + 1, r[0], r[1], r[2], r[3], r[4], jd)
+                  for i, r in enumerate(rows[:200])]
+        shortlisted = [_store_row(i + 1, r[0], r[1], r[2], r[3], r[4], jd)
+                       for i, r in enumerate(rows) if r[0] * 100 >= 85][:200]
+        honey = []
+        for hp_rank, (c, integ) in enumerate(STATE["honeypots"][:200], 1):
+            p = c.get("profile", {}) or {}
+            honey.append({
+                "rank": hp_rank,
+                "candidate_id": c.get("candidate_id"),
+                "score": 0,
+                "current_title": p.get("current_title"),
+                "current_company": p.get("current_company"),
+                "years_experience": p.get("years_of_experience"),
+                "location": p.get("location"),
+                "country": p.get("country"),
+                "verified_skills": None,
+                "council": None,
+                "notice_days": None,
+                "reasoning": "; ".join(integ[2]) if integ and len(integ) > 2 else None,
+            })
+        res = supabase_store.save_ranking(meta, top200, shortlisted, honey)
+        if res.get("ok"):
+            with _lock:
+                STATE["persisted"] = True
+    except Exception as e:  # pragma: no cover
+        log("error", f"Supabase persistence error: {type(e).__name__}: {e}")
 
 
 def start_ranking(file_path: str, role_name: str, weights: dict, params: dict):
@@ -326,10 +420,16 @@ def detail(candidate_id: str) -> dict | None:
     }
 
 
+_PROF_LEVELS = ["beginner", "intermediate", "advanced", "expert"]
+_PROF_LABELS = {"beginner": "Beginner", "intermediate": "Intermediate",
+                "advanced": "Advanced", "expert": "Expert"}
+
+
 def analytics() -> dict:
     rows = STATE["rows"]
     if not rows:
         return {}
+    n = len(rows)
     scores = np.array([r[0] * 100 for r in rows])
     yoe = np.array([float(r[2]["yoe"] or 0) for r in rows])
     sh, sb = np.histogram(scores, bins=10, range=(35, 100))
@@ -337,15 +437,162 @@ def analytics() -> dict:
     prod = sum(1 for r in rows if r[2]["product_ratio"] > 0.5)
     serv = sum(1 for r in rows if r[2]["services_only"])
     avg = {k: float(np.mean([r[3]["parts"][k] for r in rows])) for k in COUNCIL_KEYS}
+
+    # --- skills: frequency + proficiency heatmap -------------------------------
+    skill_counts: Counter = Counter()
+    skill_verified: Counter = Counter()
+    skill_prof: dict[str, Counter] = {}
+    deg_counts: Counter = Counter()
+    field_counts: Counter = Counter()
+    tier_counts: Counter = Counter()
+    loc_counts: Counter = Counter()
+    for _, c, _f, _dec, _ in rows:
+        for s in (c.get("skills") or []):
+            name = (s.get("name") or "").strip()
+            if not name:
+                continue
+            skill_counts[name] += 1
+            prof = (s.get("proficiency") or "").lower()
+            if prof in _PROF_LEVELS:
+                skill_prof.setdefault(name, Counter())[prof] += 1
+            endo = float(s.get("endorsements") or 0)
+            dur = float(s.get("duration_months") or 0)
+            if endo > 0 or dur > 0:
+                skill_verified[name] += 1
+        for e in (c.get("education") or []):
+            deg = (e.get("degree") or "").strip()
+            fld = (e.get("field_of_study") or "").strip()
+            tier = (e.get("tier") or "unknown").strip() or "unknown"
+            if deg:
+                deg_counts[deg] += 1
+            if fld:
+                field_counts[fld] += 1
+            tier_counts[tier] += 1
+        p = c.get("profile", {}) or {}
+        loc = (p.get("location") or p.get("country") or "").strip()
+        if loc:
+            loc_counts[loc] += 1
+
+    top_skill_names = [name for name, _ in skill_counts.most_common(15)]
+    top_skills = [{"name": name, "count": skill_counts[name],
+                   "verified": skill_verified.get(name, 0)} for name in top_skill_names]
+    heat_names = top_skill_names[:10]
+    heatmap = {
+        "skills": heat_names,
+        "levels": [_PROF_LABELS[l] for l in _PROF_LEVELS],
+        "matrix": [[skill_prof.get(name, Counter()).get(lvl, 0) for lvl in _PROF_LEVELS]
+                   for name in heat_names],
+    }
+
+    # --- tiers (quality bands) -------------------------------------------------
+    elite = int((scores >= 90).sum())
+    strong = int(((scores >= 80) & (scores < 90)).sum())
+    moderate = int(((scores >= 65) & (scores < 80)).sum())
+    weak = int((scores < 65).sum())
+
+    # --- funnel ----------------------------------------------------------------
+    strong_total = int((scores >= 85).sum())
+    funnel = [
+        {"stage": "Ingested", "count": STATE["ingested"]},
+        {"stage": "Passed integrity", "count": n},
+        {"stage": "Strong (≥85)", "count": strong_total},
+        {"stage": "Top 100", "count": min(100, n)},
+        {"stage": "Top 10", "count": min(10, n)},
+    ]
+
     return {
         "score_hist": [{"bucket": f"{int(sb[i])}–{int(sb[i+1])}", "count": int(sh[i])}
                        for i in range(len(sh))],
         "yoe_hist": [{"bucket": f"{int(yb[i])}–{int(yb[i+1])}", "count": int(yh[i])}
                      for i in range(len(yh))],
-        "company": {"product": prod, "services": serv, "mixed": len(rows) - prod - serv},
+        "company": {"product": prod, "services": serv, "mixed": n - prod - serv},
         "council_avg": [{"key": k, "label": COUNCIL_LABELS[k], "avg": round(avg[k], 3)}
                         for k in COUNCIL_KEYS],
+        "top_skills": top_skills,
+        "skills_heatmap": heatmap,
+        "education": {
+            "degrees": [{"label": k, "count": v} for k, v in deg_counts.most_common(6)],
+            "fields": [{"label": k, "count": v} for k, v in field_counts.most_common(8)],
+            "tiers": [{"label": k, "count": v} for k, v in tier_counts.most_common(6)],
+        },
+        "tiers": [
+            {"label": "Elite (90+)", "count": elite},
+            {"label": "Strong (80–90)", "count": strong},
+            {"label": "Moderate (65–80)", "count": moderate},
+            {"label": "Weak (<65)", "count": weak},
+        ],
+        "funnel": funnel,
+        "locations": [{"label": k, "count": v} for k, v in loc_counts.most_common(8)],
     }
+
+
+COUNCIL_DESC = {
+    "semantic_seer": "Dense semantic similarity between the role's query and the candidate's evidence text.",
+    "name_rectifier": "Whether current/past job titles genuinely match the target role (anti title-inflation).",
+    "evidence_scout": "Concrete 'built/shipped a system' evidence mined from career descriptions.",
+    "mask_piercer": "Verified skill-trust — endorsements & real usage temper self-declared skills.",
+    "path_reader": "Experience-band fit plus tenure stability (penalises chronic job-hopping).",
+    "terrain_master": "Product-vs-services background and domain (NLP/IR) proximity.",
+}
+
+
+def _fairness_metrics(rows, fair) -> dict:
+    """Augment the disparate-impact audit with score gaps + per-group means."""
+    sel_n = min(100, len(rows))
+    metrics: dict = {}
+    for attr, rep in fair.items():
+        # mean composite score per group across the ranked pool
+        group_scores: dict[str, list] = {}
+        for score, c, *_ in rows:
+            g = fairness._group_keys(c).get(attr, "unknown")
+            group_scores.setdefault(g, []).append(score * 100)
+        groups = {}
+        for g, info in rep["groups"].items():
+            ss = group_scores.get(g, [])
+            groups[g] = {
+                **info,
+                "n_pool": len(ss),
+                "avg_score": round(float(np.mean(ss)), 1) if ss else 0.0,
+            }
+        rates = [v["selection_rate"] for v in rep["groups"].values() if v["selection_rate"] > 0]
+        spd = round(max(rates) - min(rates), 4) if len(rates) >= 2 else 0.0
+        avgs = [v["avg_score"] for v in groups.values() if v["n_pool"] >= 5]
+        score_gap = round(max(avgs) - min(avgs), 1) if len(avgs) >= 2 else 0.0
+        metrics[attr] = {
+            "disparate_impact_ratio": rep["disparate_impact_ratio"],
+            "passes_four_fifths": rep["passes_four_fifths"],
+            "statistical_parity_diff": spd,
+            "score_gap": score_gap,
+            "selected_n": sel_n,
+            "groups": groups,
+        }
+    return metrics
+
+
+def _bias_flags(metrics) -> list:
+    flags = []
+    pretty = {"region": "Region", "institution_tier": "Institution tier"}
+    for attr, m in metrics.items():
+        label = pretty.get(attr, attr)
+        if not m["passes_four_fifths"]:
+            flags.append({
+                "attribute": label,
+                "severity": "high" if m["disparate_impact_ratio"] < 0.6 else "medium",
+                "metric": "Disparate impact (4/5ths rule)",
+                "value": m["disparate_impact_ratio"],
+                "message": f"{label}: disparate-impact ratio {m['disparate_impact_ratio']} "
+                           f"is below the 0.80 legal threshold — selection rates differ materially across groups.",
+            })
+        if m["score_gap"] >= 12:
+            flags.append({
+                "attribute": label,
+                "severity": "medium",
+                "metric": "Mean score gap",
+                "value": m["score_gap"],
+                "message": f"{label}: a {m['score_gap']}-point average score gap exists between "
+                           f"the strongest and weakest represented groups — review for proxy bias.",
+            })
+    return flags
 
 
 def compliance() -> dict:
@@ -355,10 +602,47 @@ def compliance() -> dict:
     candidates = [r[1] for r in rows] + [h[0] for h in STATE["honeypots"]]
     sel = list(range(min(100, len(rows))))
     fair = fairness.audit(candidates, sel)
+    metrics = _fairness_metrics(rows, fair)
+    flags = _bias_flags(metrics)
+    weights_pct = [{"key": k, "label": COUNCIL_LABELS[k],
+                    "pct": round(STATE["weights"].get(k, 0) * 100)} for k in COUNCIL_KEYS]
     return {
         "fairness": fair,
+        "metrics": metrics,
+        "bias_flags": flags,
+        "overall": {
+            "passes": len(flags) == 0,
+            "n_flags": len(flags),
+            "summary": ("No statistical bias detected against the audited attributes."
+                        if not flags else
+                        f"{len(flags)} potential bias signal(s) flagged for human review."),
+        },
+        "scoring": {
+            "formula": "composite = ( Σ councilₖ · weightₖ ) × integrity × negative_screen × availability + soft_nudge",
+            "explanation": "Six additive sub-scorers are fused by your weights to form a core fit, "
+                           "then three multiplicative gates (Integrity Warden, Neti-Neti negative "
+                           "screen, Availability Oracle) adjust it. Scores are finally calibrated to a "
+                           "0–100 scale. Every weight is inspectable and user-tunable.",
+            "weights": weights_pct,
+            "council": [{"key": k, "label": COUNCIL_LABELS[k],
+                         "description": COUNCIL_DESC[k],
+                         "weight": round(STATE["weights"].get(k, 0) * 100),
+                         "avg": round(float(np.mean([r[3]["parts"][k] for r in rows])), 3)}
+                        for k in COUNCIL_KEYS],
+            "gates": [
+                {"name": "Integrity Warden", "type": "hard exclude + multiplier",
+                 "detail": "Flags logically impossible profiles (honeypots) and excludes them; "
+                           "soft inconsistencies lower the integrity multiplier."},
+                {"name": "Neti-Neti Gatekeeper", "type": f"multiplier ≥ {config.NEGSCREEN_MIN}",
+                 "detail": "Penalises services-only careers, off-domain specialisation without NLP/IR, "
+                           "and keyword-stuffer signatures."},
+                {"name": "Availability Oracle", "type": f"multiplier {config.AVAIL_MIN}–{config.AVAIL_MAX}",
+                 "detail": "Bounded behavioural modifier from recency, responsiveness and open-to-work."},
+            ],
+        },
         "audit": {
             "system": "Redrob Ranker v2.0 (Council of Nine)",
+            "task_id": STATE.get("task_id"),
             "target_role": STATE["role"],
             "eu_ai_act_classification": "high-risk (Annex III, employment)",
             "n_candidates_scored": STATE["ingested"],
@@ -392,6 +676,116 @@ def job_intent() -> dict:
         "product_industries": jd.get("product_industries", []),
         "services_companies": jd.get("services_companies", []),
         "query_text": jd.get("query_text", ""),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Supabase-backed tasks & shortlists (Pipeline page)
+# ---------------------------------------------------------------------------
+def db_status() -> dict:
+    return supabase_store.status()
+
+
+def list_tasks() -> dict:
+    if not supabase_store.enabled():
+        return {"enabled": False, "tasks": []}
+    try:
+        return {"enabled": True, "tasks": supabase_store.list_tasks()}
+    except Exception as e:
+        log("error", f"list_tasks failed: {e}")
+        return {"enabled": True, "tasks": [], "error": str(e)}
+
+
+def get_task(task_id: str) -> dict | None:
+    try:
+        task = supabase_store.get_task(task_id)
+        if not task:
+            return None
+        task["candidates"] = supabase_store.task_candidates(task_id, "top200", limit=200)
+        task["shortlisted"] = supabase_store.task_candidates(task_id, "shortlisted", limit=200)
+        task["honeypot"] = supabase_store.task_candidates(task_id, "honeypot", limit=200)
+        return task
+    except Exception as e:
+        log("error", f"get_task failed: {e}")
+        return None
+
+
+def get_task_candidates(task_id: str, category: str = "top200", limit: int = 200) -> dict:
+    try:
+        return {"items": supabase_store.task_candidates(task_id, category, limit=limit)}
+    except Exception as e:
+        log("error", f"get_task_candidates failed: {e}")
+        return {"items": [], "error": str(e)}
+
+
+def list_shortlists(task_id: str) -> dict:
+    try:
+        return {"items": supabase_store.list_shortlists(task_id)}
+    except Exception as e:
+        log("error", f"list_shortlists failed: {e}")
+        return {"items": [], "error": str(e)}
+
+
+def create_shortlist(task_id: str, name: str) -> dict:
+    return supabase_store.create_shortlist(task_id, name)
+
+
+def delete_shortlist(shortlist_id: str) -> dict:
+    supabase_store.delete_shortlist(shortlist_id)
+    return {"ok": True}
+
+
+def add_shortlist_member(shortlist_id: str, member: dict) -> dict:
+    return supabase_store.add_shortlist_member(shortlist_id, member)
+
+
+def remove_shortlist_member(member_id: int) -> dict:
+    supabase_store.remove_shortlist_member(member_id)
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
+# NextAI — compact context built from the live ranking for the LLM
+# ---------------------------------------------------------------------------
+def nextai_context(top: int = 25) -> dict:
+    """Return a compact JSON summary of the current ranking for the assistant."""
+    rows = STATE["rows"]
+    if not rows:
+        return {"ready": False}
+    jd = _jd()
+    n = len(rows)
+    scores = [r[0] * 100 for r in rows]
+    summary_obj = summary()
+    leaders = []
+    for i, (score, c, f, dec, integ) in enumerate(rows[:top], 1):
+        p = c.get("profile", {}) or {}
+        leaders.append({
+            "rank": i,
+            "candidate_id": c.get("candidate_id"),
+            "title": p.get("current_title"),
+            "company": p.get("current_company"),
+            "score": round(score * 100, 1),
+            "yoe": p.get("years_of_experience"),
+            "location": p.get("location") or p.get("country"),
+            "notice_days": int(f["notice_days"]),
+            "verified_skills": verified_relevant_skills(c, jd, top=6),
+            "council": {COUNCIL_LABELS[k]: round(float(dec["parts"][k]), 2) for k in COUNCIL_KEYS},
+        })
+    return {
+        "ready": True,
+        "task_id": STATE.get("task_id"),
+        "role": STATE["role"],
+        "role_title": jd.get("role_title", STATE["role"]),
+        "must_have": jd.get("must_have_capabilities", []),
+        "stats": {
+            "ranked": n,
+            "ingested": STATE["ingested"],
+            "honeypots": len(STATE["honeypots"]),
+            "strong_matches": summary_obj["strong_matches"],
+            "avg_score": round(float(np.mean(scores)), 1) if scores else 0,
+            "median_score": round(float(np.median(scores)), 1) if scores else 0,
+        },
+        "leaderboard": leaders,
     }
 
 

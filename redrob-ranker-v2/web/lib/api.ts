@@ -1,10 +1,26 @@
 import type {
   Analytics, Compliance, Detail, Honeypots, JobIntent, Leaderboard, Log, Status, Summary,
+  TaskSummary, TaskCandidate, Shortlist, ShortlistMember, NextAiStatus, ChatMessage,
 } from "./types";
 
 async function get<T>(url: string): Promise<T> {
   const r = await fetch(url, { cache: "no-store" });
   if (!r.ok) throw new Error(`${r.status} ${await r.text()}`);
+  return r.json();
+}
+
+async function post<T>(url: string, body: unknown): Promise<T> {
+  const r = await fetch(url, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+async function del<T>(url: string): Promise<T> {
+  const r = await fetch(url, { method: "DELETE" });
+  if (!r.ok) throw new Error(await r.text());
   return r.json();
 }
 
@@ -29,6 +45,26 @@ export const api = {
     return r.json();
   },
   logs: () => get<{ logs: Log[] }>("/api/logs"),
+
+  // --- Supabase-backed tasks & shortlists (Pipeline page) ---
+  dbStatus: () => get<{ enabled: boolean; url: string | null; has_key: boolean }>("/api/db-status"),
+  tasks: () => get<{ enabled: boolean; tasks: TaskSummary[]; error?: string }>("/api/tasks"),
+  task: (id: string) => get<Record<string, unknown>>(`/api/tasks/${id}`),
+  taskCandidates: (id: string, category = "top200") =>
+    get<{ items: TaskCandidate[] }>(`/api/tasks/${id}/candidates?category=${category}&limit=200`),
+  shortlists: (taskId: string) => get<{ items: Shortlist[] }>(`/api/tasks/${taskId}/shortlists`),
+  createShortlist: (taskId: string, name: string) =>
+    post<Shortlist>("/api/shortlists", { task_id: taskId, name }),
+  deleteShortlist: (id: string) => del<{ ok: boolean }>(`/api/shortlists/${id}`),
+  addMember: (shortlistId: string, member: Partial<ShortlistMember> & { candidate_id: string }) =>
+    post<ShortlistMember>(`/api/shortlists/${shortlistId}/members`, member),
+  removeMember: (memberId: number) => del<{ ok: boolean }>(`/api/shortlist-members/${memberId}`),
+
+  // --- NextAI assistant ---
+  nextaiStatus: () => get<NextAiStatus>("/api/nextai/status"),
+  nextaiChat: (question: string, history: ChatMessage[]) =>
+    post<{ answer: string; provider: string; model: string; configured: boolean }>(
+      "/api/nextai/chat", { question, history }),
   stage: async (file: File) => {
     const fd = new FormData();
     fd.append("file", file);

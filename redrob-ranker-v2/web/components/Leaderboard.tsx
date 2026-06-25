@@ -95,8 +95,8 @@ function ActionMenu({ candidateId, onView }: { candidateId: string; onView: (id:
 }
 
 export default function Leaderboard({
-  data, page, setPage, onSelect,
-}: { data: LB; page: number; setPage: (p: number) => void; onSelect: (id: string) => void }) {
+  data, page, setPage, onSelect, compareIds, onToggleCompare,
+}: { data: LB; page: number; setPage: (p: number) => void; onSelect: (id: string) => void; compareIds?: string[]; onToggleCompare?: (id: string) => void }) {
   return (
     <div className="card overflow-hidden">
       {/* Header */}
@@ -117,7 +117,7 @@ export default function Leaderboard({
             key={r.candidate_id} 
             data-testid="lb-row" 
             onClick={() => onSelect(r.candidate_id)}
-            className="flex items-center px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors"
+            className={`flex items-center px-4 py-3 cursor-pointer transition-colors ${compareIds?.includes(r.candidate_id) ? "bg-brand-wash" : "hover:bg-gray-50"}`}
             style={{ gap: '12px' }}
           >
             {/* Rank */}
@@ -163,7 +163,18 @@ export default function Leaderboard({
             
             {/* Actions */}
             <div className="text-center" style={{ width: '180px' }} onClick={(e) => e.stopPropagation()}>
-              <ActionMenu candidateId={r.candidate_id} onView={onSelect} />
+              <div className="flex items-center justify-end gap-1.5">
+                {onToggleCompare && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onToggleCompare(r.candidate_id); }}
+                    title={compareIds?.includes(r.candidate_id) ? "Remove from compare" : "Add to compare (max 4)"}
+                    className={`p-1.5 rounded-md border transition-colors ${compareIds?.includes(r.candidate_id) ? "bg-brand text-white border-brand" : "bg-white text-gray-500 border-gray-200 hover:bg-gray-50"}`}
+                  >
+                    <IconCompare className="w-4 h-4" />
+                  </button>
+                )}
+                <ActionMenu candidateId={r.candidate_id} onView={onSelect} />
+              </div>
             </div>
           </div>
         ))}

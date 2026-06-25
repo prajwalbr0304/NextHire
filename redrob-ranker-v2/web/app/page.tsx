@@ -7,7 +7,12 @@ import Controls, { Weights, Params } from "@/components/Controls";
 import Leaderboard from "@/components/Leaderboard";
 import CandidateDrawer from "@/components/CandidateDrawer";
 import Logs from "@/components/Logs";
-import { AnalyticsView, ComplianceView, IntegrityView, JobIntentView, Empty } from "@/components/Views";
+import { IntegrityView, JobIntentView, Empty } from "@/components/Views";
+import InsightsView from "@/components/InsightsView";
+import GovernanceView from "@/components/GovernanceView";
+import CompareView from "@/components/CompareView";
+import PipelineView from "@/components/PipelineView";
+import NextAiView from "@/components/NextAiView";
 import { api } from "@/lib/api";
 import type {
   Analytics, Compliance, Detail, Honeypots, JobIntent, Leaderboard as LB, Log, Status, Summary,
@@ -49,6 +54,7 @@ export default function Page() {
   const [honeypots, setHoneypots] = useState<Honeypots | null>(null);
   const [jobIntent, setJobIntent] = useState<JobIntent | null>(null);
   const [selId, setSelId] = useState<string | null>(null);
+  const [compareIds, setCompareIds] = useState<string[]>([]);
   const [detail, setDetail] = useState<Detail | null>(null);
   const [exportN, setExportN] = useState(100);
   const [weights, setWeights] = useState<Weights>(DEFAULT_W);
@@ -78,6 +84,15 @@ export default function Page() {
   const changeWeights = (w: Weights) => { setWeights(w); setDirty(true); };
   const changeParams = (p: Params) => { setParams(p); setDirty(true); };
   const changeRole = (r: string) => { setRole(r); setDirty(true); };
+
+  const toggleCompare = useCallback((id: string) => {
+    setCompareIds((prev) => {
+      if (prev.includes(id)) { flog("info", `Removed ${id} from compare`); return prev.filter((x) => x !== id); }
+      if (prev.length >= 4) { flog("warn", "Compare holds a maximum of 4 candidates — remove one first."); return prev; }
+      flog("info", `Added ${id} to compare (${prev.length + 1}/4)`);
+      return [...prev, id];
+    });
+  }, [flog]);
 
   // init
   useEffect(() => {
@@ -461,10 +476,13 @@ export default function Page() {
             <Logs logs={mergedLogs} running={running} />
           ) : (
             <div>
-              {!ready ? (tab === "candidates" ? <LeaderboardEmptyHeader /> : <Empty />)
-                : tab === "candidates" ? (lb ? <Leaderboard data={lb} page={page} setPage={setPage} onSelect={setSelId} /> : <Empty />)
-                : tab === "insights" ? <AnalyticsView a={analytics!} />
-                : tab === "governance" ? <ComplianceView c={compliance!} />
+              {tab === "pipeline" ? <PipelineView />
+                : tab === "nextai" ? <NextAiView ready={ready} />
+                : tab === "compare" ? <CompareView ids={compareIds} setIds={setCompareIds} ready={ready} cols={4} />
+                : !ready ? (tab === "candidates" ? <LeaderboardEmptyHeader /> : <Empty />)
+                : tab === "candidates" ? (lb ? <Leaderboard data={lb} page={page} setPage={setPage} onSelect={setSelId} compareIds={compareIds} onToggleCompare={toggleCompare} /> : <Empty />)
+                : tab === "insights" ? <InsightsView a={analytics} />
+                : tab === "governance" ? <GovernanceView c={compliance} />
                 : tab === "integrity" ? <IntegrityView h={honeypots!} />
                 : tab === "role" ? <JobIntentView j={jobIntent!} />
                 : <Empty />}

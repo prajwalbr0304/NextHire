@@ -21,6 +21,7 @@ if REPO_ROOT not in sys.path:
 
 from src import roles                       # noqa: E402
 from api import ranker                      # noqa: E402
+from api import nextai                      # noqa: E402
 
 app = FastAPI(title="Redrob Ranker API", version="2.0")
 app.add_middleware(
@@ -173,3 +174,92 @@ def export(n: int = Query(100, ge=1)):
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f'attachment; filename="{fname}"'},
     )
+
+
+# ---------------------------------------------------------------------------
+# Tasks & shortlists (Supabase-backed — Pipeline page)
+# ---------------------------------------------------------------------------
+class ShortlistCreate(BaseModel):
+    task_id: str
+    name: str
+
+
+class MemberCreate(BaseModel):
+    candidate_id: str
+    rank: int | None = None
+    score: float | None = None
+    current_title: str | None = None
+    current_company: str | None = None
+    years_experience: float | None = None
+    task_id: str | None = None
+
+
+@app.get("/api/db-status")
+def db_status():
+    return ranker.db_status()
+
+
+@app.get("/api/tasks")
+def list_tasks():
+    return ranker.list_tasks()
+
+
+@app.get("/api/tasks/{task_id}")
+def get_task(task_id: str):
+    t = ranker.get_task(task_id)
+    if t is None:
+        raise HTTPException(404, "Task not found.")
+    return t
+
+
+@app.get("/api/tasks/{task_id}/candidates")
+def get_task_candidates(task_id: str, category: str = "top200", limit: int = 200):
+    return ranker.get_task_candidates(task_id, category=category, limit=limit)
+
+
+@app.get("/api/tasks/{task_id}/shortlists")
+def list_shortlists(task_id: str):
+    return ranker.list_shortlists(task_id)
+
+
+@app.post("/api/shortlists")
+def create_shortlist(req: ShortlistCreate):
+    if not ranker.db_status().get("enabled"):
+        raise HTTPException(400, "Supabase is not configured.")
+    return ranker.create_shortlist(req.task_id, req.name)
+
+
+@app.delete("/api/shortlists/{shortlist_id}")
+def delete_shortlist(shortlist_id: str):
+    return ranker.delete_shortlist(shortlist_id)
+
+
+@app.post("/api/shortlists/{shortlist_id}/members")
+def add_member(shortlist_id: str, req: MemberCreate):
+    if not ranker.db_status().get("enabled"):
+        raise HTTPException(400, "Supabase is not configured.")
+    return ranker.add_shortlist_member(shortlist_id, req.model_dump(exclude_none=True))
+
+
+@app.delete("/api/shortlist-members/{member_id}")
+def remove_member(member_id: int):
+    return ranker.remove_shortlist_member(member_id)
+
+
+# ---------------------------------------------------------------------------
+# NextAI assistant
+# ---------------------------------------------------------------------------
+class ChatRequest(BaseModel):
+    question: str
+    history: list | None = None
+
+
+@app.get("/api/nextai/status")
+def nextai_status():
+    return nextai.status()
+
+
+@app.post("/api/nextai/chat")
+def nextai_chat(req: ChatRequest):
+    context = ranker.nextai_context(top=25)
+    return nextai.chat(req.question, req.history or [], context)
