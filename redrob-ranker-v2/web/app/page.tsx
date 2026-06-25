@@ -225,122 +225,156 @@ export default function Page() {
         <TopBar tabLabel={tab} />
 
         <div className="px-7 py-6 space-y-5">
-          {/* title row */}
+          {/* title row - changes based on active tab */}
           <div className="flex items-end justify-between gap-4 flex-wrap">
             <div>
-              <h1 className="text-2xl font-extrabold tracking-tight">Rank and Shortlist</h1>
+              <h1 className="text-2xl font-extrabold tracking-tight">
+                {tab === "candidates" ? "Rank and Shortlist" : 
+                 tab === "insights" ? "Insights & Analytics" :
+                 tab === "integrity" ? "Integrity & Honeypot Detection" :
+                 tab === "governance" ? "Governance & Compliance" :
+                 tab === "role" ? "Role Management" :
+                 tab === "compare" ? "Candidate Comparison" :
+                 tab === "pipeline" ? "Pipeline Overview" :
+                 tab === "nextai" ? "NextAI Assistant" :
+                 tab === "audit" ? "Audit Logs" :
+                 tab === "settings" ? "Settings" : "Dashboard"}
+              </h1>
               <p className="text-sm text-ink-muted mt-1">
-                {ready
-                  ? <>{summary!.ranked.toLocaleString()} candidates scored against <span className="font-semibold text-ink-soft">{summary!.role}</span> · updated just now</>
-                  : running ? <>{status.message || "Ranking…"} {status.ingested ? `· ${status.ingested.toLocaleString()} ingested` : ""}</>
-                  : <>Upload a file, select a role, and click <span className="font-semibold">Rank candidates</span> to begin.</>}
+                {tab === "candidates" ? (
+                  ready
+                    ? <>{summary!.ranked.toLocaleString()} candidates scored against <span className="font-semibold text-ink-soft">{summary!.role}</span> · updated just now</>
+                    : running ? <>{status.message || "Ranking…"} {status.ingested ? `· ${status.ingested.toLocaleString()} ingested` : ""}</>
+                    : <>Upload a file, select a role, and click <span className="font-semibold">Rank candidates</span> to begin.</>
+                ) : tab === "insights" ? (
+                  <>View recruitment analytics and trends</>
+                ) : tab === "integrity" ? (
+                  <>Monitor honeypot candidates and integrity checks</>
+                ) : tab === "governance" ? (
+                  <>Review compliance and governance data</>
+                ) : tab === "role" ? (
+                  <>Manage job roles and requirements</>
+                ) : tab === "compare" ? (
+                  <>Compare candidate profiles side by side</>
+                ) : tab === "pipeline" ? (
+                  <>Track candidate pipeline progress</>
+                ) : tab === "nextai" ? (
+                  <>AI-powered recruitment assistant</>
+                ) : tab === "audit" ? (
+                  <>View system activity logs</>
+                ) : tab === "settings" ? (
+                  <>Configure application settings</>
+                ) : null}
               </p>
             </div>
           </div>
 
-          {/* New Upload Controls - Simple upload button, role dropdown, rank button */}
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div className="flex items-center gap-3 flex-wrap">
-              {/* Simple Upload Button - Shows "Uploaded ✓" with filename after staging, or upload state */}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".json,.jsonl"
-                className="hidden"
-                onChange={handleFileChange}
-              />
-              <button
-                onClick={handleUploadClick}
-                disabled={running || uploading}
-                className={`btn-primary flex items-center gap-2 disabled:opacity-50 ${staged ? "bg-positive/10 border-positive text-positive hover:bg-positive/20" : ""}`}
-              >
-                {uploading ? (
-                  <>
-                    <IconUpload className="h-4 w-4 animate-pulse" />
-                    Uploading...
-                  </>
-                ) : staged ? (
-                  <>
-                    <IconCheck className="h-4 w-4" />
-                    Uploaded ✓
-                  </>
-                ) : (
-                  <>
-                    <IconUpload className="h-4 w-4" />
-                    Upload
-                  </>
-                )}
-              </button>
-              
-              {/* Show file name and size if staged */}
-              {staged && (
-                <span className="text-sm text-ink-muted">
-                  {staged.name} ({staged.size_mb} MB)
-                </span>
-              )}
-
-              {/* Role Selection Dropdown - Now persists selection after ranking */}
-              <div className="relative">
-                <span className={`pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full ${role ? "bg-positive" : "bg-gray-200"}`} />
-                <select
-                  value={role}
-                  onChange={(e) => changeRole(e.target.value)}
-                  disabled={running}
-                  className="appearance-none bg-white border border-line rounded-lg pl-7 pr-8 py-2 text-sm font-medium text-black focus:outline-none focus:ring-2 focus:ring-brand/30 cursor-pointer min-w-[180px] disabled:opacity-50"
+          {/* Upload Controls - Only visible on Candidates page */}
+          {tab === "candidates" && (
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-3 flex-wrap">
+                {/* Simple Upload Button - Shows "Uploaded ✓" with filename after staging, or upload state */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".json,.jsonl"
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+                <button
+                  onClick={handleUploadClick}
+                  disabled={running || uploading}
+                  className={`btn-primary flex items-center gap-2 disabled:opacity-50 ${staged ? "bg-positive/10 border-positive text-positive hover:bg-positive/20" : ""}`}
                 >
-                  {!role && <option value="" disabled>Select job role</option>}
-                  {roles.map((r) => <option key={r} value={r}>{r}</option>)}
-                </select>
-                <IconChevron className="h-4 w-4 absolute right-2 top-1/2 -translate-y-1/2 rotate-90 text-ink-faint pointer-events-none" />
+                  {uploading ? (
+                    <>
+                      <IconUpload className="h-4 w-4 animate-pulse" />
+                      Uploading...
+                    </>
+                  ) : staged ? (
+                    <>
+                      <IconCheck className="h-4 w-4" />
+                      Uploaded ✓
+                    </>
+                  ) : (
+                    <>
+                      <IconUpload className="h-4 w-4" />
+                      Upload
+                    </>
+                  )}
+                </button>
+                
+                {/* Show file name and size if staged */}
+                {staged && (
+                  <span className="text-sm text-ink-muted">
+                    {staged.name} ({staged.size_mb} MB)
+                  </span>
+                )}
+
+                {/* Role Selection Dropdown - Now persists selection after ranking */}
+                <div className="relative">
+                  <span className={`pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full ${role ? "bg-positive" : "bg-gray-200"}`} />
+                  <select
+                    value={role}
+                    onChange={(e) => changeRole(e.target.value)}
+                    disabled={running}
+                    className="appearance-none bg-white border border-line rounded-lg pl-7 pr-8 py-2 text-sm font-medium text-black focus:outline-none focus:ring-2 focus:ring-brand/30 cursor-pointer min-w-[180px] disabled:opacity-50"
+                  >
+                    {!role && <option value="" disabled>Select job role</option>}
+                    {roles.map((r) => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                  <IconChevron className="h-4 w-4 absolute right-2 top-1/2 -translate-y-1/2 rotate-90 text-ink-faint pointer-events-none" />
+                </div>
+
+                {/* Rank Candidates Button - Shows "Re-rank" only when role/weights are changed AFTER initial ranking */}
+                <button
+                  onClick={onRank}
+                  disabled={running || !role}
+                  className="btn-primary disabled:opacity-50 flex items-center gap-2"
+                >
+                  {running ? "Ranking..." : (hasRanked && dirty) ? (
+                    <>
+                      <IconRefresh className="h-4 w-4" />
+                      Re-rank
+                    </>
+                  ) : "Rank Candidates"}
+                </button>
+
+                {/* Error message */}
+                {showUploadError && uploadErrorMessage && (
+                  <span className="text-sm text-danger">{uploadErrorMessage}</span>
+                )}
               </div>
 
-              {/* Rank Candidates Button - Shows "Re-rank" only when role/weights are changed AFTER initial ranking */}
-              <button
-                onClick={onRank}
-                disabled={running || !role}
-                className="btn-primary disabled:opacity-50 flex items-center gap-2"
-              >
-                {running ? "Ranking..." : (hasRanked && dirty) ? (
-                  <>
-                    <IconRefresh className="h-4 w-4" />
-                    Re-rank
-                  </>
-                ) : "Rank Candidates"}
-              </button>
-
-              {/* Error message */}
-              {showUploadError && uploadErrorMessage && (
-                <span className="text-sm text-danger">{uploadErrorMessage}</span>
-              )}
-            </div>
-
-            {/* Adjust Weights Button with Donut Icon - Right aligned */}
-            <div className="flex items-center gap-2">
-              {/* Start New Task Button - appears only after ranking */}
-              {hasRanked && (
-                <button
-                  onClick={() => { setRole(""); setStaged(null); setSummary(null); setLb(null); setHasRanked(false); setDirty(false); setStatus({ status: "idle", message: "", role: null, file: null, file_size_mb: null, ingested: 0, ranked: 0, honeypots: 0, runtime: 0 }); }}
-                  disabled={running}
-                  className="btn flex items-center gap-2 bg-white border border-line text-ink-soft hover:bg-gray-50 disabled:opacity-50"
-                >
-                  <IconRefresh className="h-4 w-4" />
-                  Start New Task
-                </button>
-              )}
-              
               {/* Adjust Weights Button with Donut Icon - Right aligned */}
-              <button
-                onClick={() => setShowWeightsModal(true)}
-                disabled={running}
-                className="btn-primary flex items-center gap-2 disabled:opacity-50 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700"
-              >
-                <IconDonut className="h-4 w-4" />
-                Adjust Weights
-              </button>
+              <div className="flex items-center gap-2">
+                {/* Start New Task Button - appears only after ranking */}
+                {hasRanked && (
+                  <button
+                    onClick={() => { setRole(""); setStaged(null); setSummary(null); setLb(null); setHasRanked(false); setDirty(false); setStatus({ status: "idle", message: "", role: null, file: null, file_size_mb: null, ingested: 0, ranked: 0, honeypots: 0, runtime: 0 }); }}
+                    disabled={running}
+                    className="btn flex items-center gap-2 bg-white border border-line text-ink-soft hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    <IconRefresh className="h-4 w-4" />
+                    Start New Task
+                  </button>
+                )}
+                
+                {/* Adjust Weights Button with Donut Icon - Right aligned */}
+                <button
+                  onClick={() => setShowWeightsModal(true)}
+                  disabled={running}
+                  className="btn-primary flex items-center gap-2 disabled:opacity-50 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700"
+                >
+                  <IconDonut className="h-4 w-4" />
+                  Adjust Weights
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
-          {ready && summary ? <Kpis s={summary} /> : <KpiSkeleton running={running} />}
+          {/* KPIs - Only visible on Candidates page */}
+          {tab === "candidates" && (ready && summary ? <Kpis s={summary} /> : <KpiSkeleton running={running} />)}
 
           {/* Search bar - visible from start */}
           {tab === "candidates" && (
