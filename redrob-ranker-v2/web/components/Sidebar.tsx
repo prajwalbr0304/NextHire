@@ -42,7 +42,7 @@ export default function Sidebar({
             <div key={it.id} onClick={() => setTab(it.id)}
               className={`navitem ${active ? "navitem-active" : ""} ${collapsed ? "justify-center px-0" : ""}`}
               title={collapsed ? it.label : undefined}>
-              <Icon className="h-[18px] w-[18px] shrink-0" />
+              <Icon className={`${collapsed ? "h-5 w-5" : "h-[18px] w-[18px]"} shrink-0`} />
               {!collapsed && (
                 <span className="flex-1">{it.label}</span>
               )}
