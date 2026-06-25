@@ -37,9 +37,9 @@ from src.load import load_candidates                           # noqa: E402
 COUNCIL_KEYS = ["semantic_seer", "name_rectifier", "evidence_scout",
                 "mask_piercer", "path_reader", "terrain_master"]
 COUNCIL_LABELS = {
-    "semantic_seer": "Semantic Seer", "name_rectifier": "Name-Rectifier",
-    "evidence_scout": "Evidence Scout", "mask_piercer": "Mask-Piercer",
-    "path_reader": "Path-Reader", "terrain_master": "Terrain Master",
+    "semantic_seer": "Role-Signal Alignment", "name_rectifier": "Title Calibration Index",
+    "evidence_scout": "Delivery Velocity", "mask_piercer": "Declared vs. Demonstrated Skill",
+    "path_reader": "Tenure & Progression Depth", "terrain_master": "Domain Density",
 }
 
 DEFAULT_FILE = os.environ.get("REDROB_CANDIDATES",
