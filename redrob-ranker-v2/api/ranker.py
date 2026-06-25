@@ -394,6 +394,152 @@ def leaderboard(page: int = 1, size: int = 100, query: str = "") -> dict:
             "pages": max(1, (total + size - 1) // size)}
 
 
+def _candidate_insights(c: dict, f: dict, dec: dict, integ, score: float, jd: dict) -> dict:
+    """Derive recruiter-facing insight sections from the real scoring features.
+
+    Everything here is grounded in computed signals (no hallucination): council
+    parts/rationales, integrity flags, JD must-haves and title intent.
+    """
+    p = c.get("profile", {}) or {}
+    parts = dec.get("parts", {}) or {}
+    rats = dec.get("rationales", {}) or {}
+    weights = STATE.get("weights") or dict(config.COUNCIL_WEIGHTS)
+    yoe = float(f.get("yoe") or 0.0)
+    skill_names = [(s.get("name") or "").lower() for s in (c.get("skills") or [])]
+
+    def _skill_covers(term: str) -> bool:
+        t = term.lower()
+        return any(t in sn or sn in t for sn in skill_names if sn)
+
+    # ---- weighted score breakdown (council contributions) ----
+    breakdown = []
+    for k in COUNCIL_KEYS:
+        part = float(parts.get(k, 0.0))
+        w = float(weights.get(k, 0.0))
+        breakdown.append({
+            "key": k, "label": COUNCIL_LABELS.get(k, k),
+            "score": round(part * 100), "weight": round(w * 100),
+            "points": round(part * w * 100, 1),
+        })
+
+    # ---- strengths (highest signals + positive flags) ----
+    strengths: list[dict] = []
+    for k, v in sorted(parts.items(), key=lambda kv: -kv[1]):
+        if v >= 0.6:
+            strengths.append({"label": COUNCIL_LABELS.get(k, k),
+                              "detail": rats.get(k) or f"Scores {v*100:.0f}/100 on this dimension."})
+    if f.get("cur_title_pos"):
+        strengths.append({"label": "On-track job title",
+                          "detail": f"Current title “{p.get('current_title','')}” matches the target role family."})
+    if f.get("product_ratio", 0) > 0.5:
+        strengths.append({"label": "Product-company pedigree",
+                          "detail": "Most experience is at product (vs. services) companies."})
+    if f.get("evidence_hits", 0) >= 3:
+        strengths.append({"label": "Demonstrated delivery",
+                          "detail": f"{int(f['evidence_hits'])} concrete build/ship signals found in role descriptions."})
+    if f.get("relevant_skill_count", 0) >= 3:
+        strengths.append({"label": "Verified relevant skills",
+                          "detail": f"{int(f['relevant_skill_count'])} role-relevant skills backed by usage/endorsements."})
+    if f.get("location_match"):
+        strengths.append({"label": "Location fit", "detail": "Based in a preferred hiring region."})
+    if f.get("days_inactive", 999) <= 30:
+        strengths.append({"label": "Actively engaged",
+                          "detail": f"Active within the last {int(f['days_inactive'])} days."})
+    if f.get("notice_days", 90) <= 30:
+        strengths.append({"label": "Quick availability",
+                          "detail": f"Short notice period (~{int(f['notice_days'])} days)."})
+
+    # ---- weaknesses (lowest signals + honest concerns) ----
+    weaknesses: list[dict] = []
+    for k, v in sorted(parts.items(), key=lambda kv: kv[1]):
+        if v < 0.4:
+            weaknesses.append({"label": COUNCIL_LABELS.get(k, k),
+                              "detail": rats.get(k) or f"Low signal ({v*100:.0f}/100) on this dimension."})
+    if f.get("cur_title_neg"):
+        weaknesses.append({"label": "Off-track current title",
+                          "detail": "Current role title sits outside the target track."})
+    if f.get("services_only"):
+        weaknesses.append({"label": "Services-only background",
+                          "detail": "Career concentrated in services/consulting firms."})
+    if f.get("avg_tenure_months") and f["avg_tenure_months"] < 18 and f.get("n_roles", 0) > 1:
+        weaknesses.append({"label": "Short tenures",
+                          "detail": f"Average tenure ~{f['avg_tenure_months']:.0f} months across {int(f['n_roles'])} roles."})
+    if f.get("response_rate", 1) < 0.2:
+        weaknesses.append({"label": "Low recruiter response",
+                          "detail": f"Responds to ~{f['response_rate']*100:.0f}% of recruiter outreach."})
+
+    # ---- risk factors + composite risk score ----
+    risk_factors: list[dict] = []
+    integ_score = float(integ[0]) if integ else 1.0
+    is_honeypot = bool(integ[1]) if integ and len(integ) > 1 else False
+    for r in (integ[2] if integ and len(integ) > 2 else []):
+        risk_factors.append({"label": r, "severity": "high" if is_honeypot else "medium"})
+    if f.get("expert_zero_dur", 0) >= 1:
+        risk_factors.append({"label": f"{int(f['expert_zero_dur'])} ‘expert’ skills with no recorded usage", "severity": "medium"})
+    if f.get("services_only"):
+        risk_factors.append({"label": "Services-only company history", "severity": "low"})
+    if f.get("days_inactive", 0) > 120:
+        risk_factors.append({"label": f"Profile inactive ~{int(f['days_inactive'])} days", "severity": "medium"})
+    if f.get("notice_days", 0) > 60:
+        risk_factors.append({"label": f"Long notice period (~{int(f['notice_days'])} days)", "severity": "low"})
+    if not f.get("verified_email") and not f.get("verified_phone"):
+        risk_factors.append({"label": "Contact details unverified", "severity": "low"})
+    if f.get("avg_tenure_months") and f["avg_tenure_months"] < 12 and f.get("n_roles", 0) > 2:
+        risk_factors.append({"label": "Frequent job changes", "severity": "medium"})
+
+    sev_pts = {"low": 8, "medium": 18, "high": 34}
+    risk_points = sum(sev_pts.get(rf["severity"], 10) for rf in risk_factors)
+    risk_points += round((1.0 - integ_score) * 40)
+    risk_score = max(0, min(100, risk_points))
+    risk_level = "high" if risk_score >= 55 else "medium" if risk_score >= 25 else "low"
+    if not risk_factors:
+        risk_factors.append({"label": "No material risk signals detected", "severity": "low"})
+
+    # ---- missing qualifications + must-have coverage ----
+    musts = [m for m in jd.get("must_have_capabilities", []) if m]
+    covered = [m for m in musts if _skill_covers(m)]
+    missing_caps = [m for m in musts if m not in covered]
+    missing: list[dict] = []
+    exp = jd.get("experience", {}) or {}
+    req_low = exp.get("required_low")
+    if req_low is not None and yoe < req_low:
+        missing.append({"label": f"Experience below role minimum ({yoe:.0f}y vs {req_low}y)", "kind": "experience"})
+    if f.get("relevant_skill_count", 0) == 0:
+        missing.append({"label": "No verified role-relevant skills", "kind": "skill"})
+    for m in missing_caps[:8]:
+        missing.append({"label": m, "kind": "skill"})
+    coverage_pct = round(len(covered) / (len(musts) or 1) * 100)
+
+    # ---- similar role match (other roles this profile fits) ----
+    all_titles = [(p.get("current_title") or "").lower()] + \
+                 [(r.get("title") or "").lower() for r in (c.get("career_history") or [])]
+    cur_role = STATE.get("role")
+    similar: list[dict] = []
+    for name in roles.role_names():
+        if name == cur_role:
+            continue
+        rj = roles.get_role(name)
+        rmust = [m.lower() for m in rj.get("must_have_capabilities", [])]
+        pos = [t.lower() for t in rj.get("positive_titles", [])]
+        title_hit = any(any(t in title for t in pos) for title in all_titles if title)
+        cov = (sum(1 for m in rmust if _skill_covers(m)) / len(rmust)) if rmust else 0.0
+        match = 0.65 * cov + (0.35 if title_hit else 0.0)
+        similar.append({"role": rj.get("role_title", name), "match": round(match * 100)})
+    similar.sort(key=lambda x: -x["match"])
+
+    return {
+        "strengths": strengths[:6],
+        "weaknesses": weaknesses[:6],
+        "risk": {"score": risk_score, "level": risk_level, "factors": risk_factors[:6]},
+        "missing_qualifications": missing[:10],
+        "must_have_coverage": coverage_pct,
+        "must_have_total": len(musts),
+        "must_have_covered": len(covered),
+        "score_breakdown": breakdown,
+        "similar_roles": similar[:4],
+    }
+
+
 def detail(candidate_id: str) -> dict | None:
     idx = STATE["id_index"].get(candidate_id)
     if idx is None:
@@ -417,6 +563,7 @@ def detail(candidate_id: str) -> dict | None:
              "months": r.get("duration_months"), "start": r.get("start_date"),
              "end": r.get("end_date") or "Present", "description": r.get("description")}
             for r in c.get("career_history", [])],
+        **_candidate_insights(c, f, dec, integ, score, jd),
     }
 
 

@@ -2,7 +2,71 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import type { Shortlist, TaskCandidate, TaskSummary } from "@/lib/types";
-import { IconChevron, IconPlus, IconTrash, IconLayers, IconDatabase, IconCheck, IconRefresh } from "./icons";
+import { IconChevron, IconPlus, IconTrash, IconLayers, IconDatabase, IconCheck, IconRefresh, IconDownload } from "./icons";
+
+function downloadFile(filename: string, content: string, mime: string) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+const csvCell = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+
+function exportShortlist(sl: Shortlist, format: "csv" | "json") {
+  const safeName = (sl.name || "shortlist").replace(/[^a-z0-9]+/gi, "_").toLowerCase();
+  if (format === "json") {
+    downloadFile(`${safeName}.json`, JSON.stringify(sl.members, null, 2), "application/json");
+    return;
+  }
+  const headers = ["Rank", "Candidate ID", "Title", "Company", "Years Experience", "Score"];
+  const rows = [...sl.members]
+    .sort((a, b) => (a.rank ?? 1e9) - (b.rank ?? 1e9))
+    .map((m) => [m.rank ?? "", m.candidate_id, m.current_title ?? "", m.current_company ?? "", m.years_experience ?? "", m.score ?? ""]);
+  const csv = [headers, ...rows].map((r) => r.map(csvCell).join(",")).join("\r\n");
+  downloadFile(`${safeName}.csv`, csv, "text/csv;charset=utf-8");
+}
+
+function ExportShortlist({ shortlist }: { shortlist: Shortlist }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    function onDoc(e: MouseEvent) { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
+  const disabled = shortlist.members.length === 0;
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => !disabled && setOpen((o) => !o)}
+        disabled={disabled}
+        title={disabled ? "Add candidates to export" : "Export shortlist"}
+        className="p-1 rounded hover:bg-gray-100 text-ink-faint hover:text-brand disabled:opacity-40 disabled:hover:text-ink-faint"
+      >
+        <IconDownload className="h-3.5 w-3.5" />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1 w-40 bg-white border border-line rounded-lg shadow-pop py-1 z-20">
+          <div className="px-3 py-1.5 text-[11px] font-semibold text-ink-faint uppercase tracking-wide">Export as</div>
+          <button onClick={() => { exportShortlist(shortlist, "csv"); setOpen(false); }}
+            className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 flex items-center gap-2">
+            <IconDownload className="h-3.5 w-3.5 text-ink-faint" /> CSV (.csv)
+          </button>
+          <button onClick={() => { exportShortlist(shortlist, "json"); setOpen(false); }}
+            className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 flex items-center gap-2">
+            <IconDownload className="h-3.5 w-3.5 text-ink-faint" /> JSON (.json)
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function SetupNotice() {
   return (
@@ -200,9 +264,12 @@ export default function PipelineView() {
                     <IconLayers className="h-4 w-4 text-brand" /> {sl.name}
                     <span className="pill bg-brand-wash text-brand-dark">{sl.count}</span>
                   </div>
-                  <button onClick={() => deleteShortlist(sl.id)} className="p-1 rounded hover:bg-gray-100 text-ink-faint hover:text-danger" title="Delete shortlist">
-                    <IconTrash className="h-3.5 w-3.5" />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <ExportShortlist shortlist={sl} />
+                    <button onClick={() => deleteShortlist(sl.id)} className="p-1 rounded hover:bg-gray-100 text-ink-faint hover:text-danger" title="Delete shortlist">
+                      <IconTrash className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </div>
                 <div className="divide-y divide-line max-h-56 overflow-auto">
                   {sl.members.length === 0 && <div className="px-4 py-3 text-xs text-ink-faint">Empty — add candidates from the left.</div>}

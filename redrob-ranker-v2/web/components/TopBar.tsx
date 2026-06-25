@@ -32,9 +32,9 @@ export default function TopBar({
         <span className="text-lg font-bold text-ink">{TAB_LABEL[tabLabel] ?? tabLabel}</span>
         <span className="text-xs text-ink-muted">{TAB_TAGLINE[tabLabel] ?? ""}</span>
       </div>
-      <div className="flex flex-col items-end justify-center">
-        <span className="text-lg font-bold text-black">Nexthire</span>
-        <span className="text-xs text-ink-muted">Precision in every hire</span>
+      <div className="flex flex-col items-end leading-tight">
+        <span className="text-lg font-extrabold tracking-tight bg-gradient-to-r from-brand to-purple-600 bg-clip-text text-transparent">Nexthire</span>
+        <span className="text-[11px] text-ink-muted">Precision in every hire</span>
       </div>
     </div>
   );

@@ -15,9 +15,12 @@ import PipelineView from "@/components/PipelineView";
 import NextAiView from "@/components/NextAiView";
 import { api } from "@/lib/api";
 import type {
-  Analytics, Compliance, Detail, Honeypots, JobIntent, Leaderboard as LB, Log, Status, Summary,
+  Analytics, Compliance, Detail, Honeypots, JobIntent, Leaderboard as LB, Log, Status, Summary, Shortlist, Row,
 } from "@/lib/types";
-import { IconDownload, IconUpload, IconChevron, IconDonut, IconClose, IconUsers, IconSpark, IconAlert, IconClock, IconBolt, IconSearch, IconCheck, IconRefresh } from "@/components/icons";
+import { IconDownload, IconUpload, IconChevron, IconDonut, IconClose, IconUsers, IconSpark, IconAlert, IconClock, IconBolt, IconSearch, IconCheck, IconRefresh, IconFilter } from "@/components/icons";
+
+type Filters = { minScore: number; minYoe: number; maxYoe: number; notice: string[] };
+const DEFAULT_FILTERS: Filters = { minScore: 0, minYoe: 0, maxYoe: 50, notice: [] };
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "candidates", label: "Candidates" }, { id: "insights", label: "Insights" },
@@ -57,6 +60,14 @@ export default function Page() {
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [detail, setDetail] = useState<Detail | null>(null);
   const [exportN, setExportN] = useState(100);
+  const [shortlists, setShortlists] = useState<Shortlist[]>([]);
+  const [dbEnabled, setDbEnabled] = useState(false);
+  const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
+  const [showFilter, setShowFilter] = useState(false);
+  const [showExport, setShowExport] = useState(false);
+  const [customExport, setCustomExport] = useState("");
+  const filterRef = useRef<HTMLDivElement>(null);
+  const exportRef = useRef<HTMLDivElement>(null);
   const [weights, setWeights] = useState<Weights>(DEFAULT_W);
   const [params, setParams] = useState<Params>(DEFAULT_P);
   const [dirty, setDirty] = useState(false);
@@ -80,6 +91,75 @@ export default function Page() {
     () => [...feLogs, ...beLogs].sort((a, b) => a.ts.localeCompare(b.ts)),
     [feLogs, beLogs]
   );
+
+  const activeFilterCount = useMemo(() => {
+    let n = 0;
+    if (filters.minScore > 0) n++;
+    if (filters.minYoe > 0 || filters.maxYoe < 50) n++;
+    if (filters.notice.length) n++;
+    return n;
+  }, [filters]);
+
+  const noticeBucket = (days: number) =>
+    days === 0 ? "immediate" : days <= 30 ? "30" : days <= 60 ? "60" : "90";
+
+  const filteredLb = useMemo(() => {
+    if (!lb) return null;
+    if (activeFilterCount === 0) return lb;
+    const items = lb.items.filter((r) => {
+      if (r.score < filters.minScore) return false;
+      const y = r.yoe ?? 0;
+      if (y < filters.minYoe || y > filters.maxYoe) return false;
+      if (filters.notice.length && !filters.notice.includes(noticeBucket(r.notice_days))) return false;
+      return true;
+    });
+    return { ...lb, items };
+  }, [lb, filters, activeFilterCount]);
+
+  // close filter/export dropdowns on outside click
+  useEffect(() => {
+    function onDoc(e: MouseEvent) {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) setShowFilter(false);
+      if (exportRef.current && !exportRef.current.contains(e.target as Node)) setShowExport(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
+
+  const toggleNotice = (b: string) =>
+    setFilters((f) => ({ ...f, notice: f.notice.includes(b) ? f.notice.filter((x) => x !== b) : [...f.notice, b] }));
+
+  const runExport = (n: number) => { if (n > 0) { setExportN(n); window.open(api.exportUrl(n), "_blank"); setShowExport(false); } };
+
+  const taskId = dbEnabled ? (status.task_id || null) : null;
+
+  const refreshShortlists = useCallback(() => {
+    if (!taskId) { setShortlists([]); return; }
+    api.shortlists(taskId).then((s) => setShortlists(s.items || [])).catch(() => setShortlists([]));
+  }, [taskId]);
+
+  const addToShortlist = useCallback(async (shortlistId: string, row: Row) => {
+    if (!taskId) return;
+    try {
+      await api.addMember(shortlistId, {
+        candidate_id: row.candidate_id, rank: row.rank, score: row.score,
+        current_title: row.title || undefined, current_company: row.company || undefined,
+        years_experience: row.yoe ?? undefined, task_id: taskId,
+      } as any);
+      flog("success", `Added ${row.candidate_id} to shortlist`);
+      refreshShortlists();
+    } catch (e: any) { flog("error", `Could not add to shortlist: ${e?.message || e}`); }
+  }, [taskId, refreshShortlists, flog]);
+
+  const createShortlist = useCallback(async (name: string): Promise<Shortlist | null> => {
+    if (!taskId) return null;
+    try {
+      const sl = await api.createShortlist(taskId, name);
+      flog("success", `Created shortlist "${name}"`);
+      refreshShortlists();
+      return sl;
+    } catch (e: any) { flog("error", `Could not create shortlist: ${e?.message || e}`); return null; }
+  }, [taskId, refreshShortlists, flog]);
 
   const changeWeights = (w: Weights) => { setWeights(w); setDirty(true); };
   const changeParams = (p: Params) => { setParams(p); setDirty(true); };
@@ -117,6 +197,7 @@ export default function Page() {
       }
     }).catch(() => {});
     api.logs().then((r) => setBeLogs(r.logs)).catch(() => {});
+    api.dbStatus().then((d) => setDbEnabled(!!d.enabled)).catch(() => setDbEnabled(false));
     return () => { if (poll.current) clearInterval(poll.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -181,6 +262,8 @@ export default function Page() {
           setHasRanked(true); // Mark that we've ranked at least once
           flog("success", `Ranking done in ${s.runtime}s — loading leaderboard`);
           refreshAll();
+          // Supabase persistence + shortlist seeding finishes just after "done"; re-fetch shortly.
+          if (dbEnabled) setTimeout(() => refreshShortlists(), 1500);
         }
         if (s.status === "error") {
           if (poll.current) clearInterval(poll.current);
@@ -188,7 +271,7 @@ export default function Page() {
         }
       }, 1500);
     } catch (e) { flog("error", `Rank request failed: ${e}`); }
-  }, [role, weights, params, staged, refreshAll, flog]);
+  }, [role, weights, params, staged, refreshAll, flog, dbEnabled, refreshShortlists]);
 
   // leaderboard paging + search
   useEffect(() => {
@@ -207,6 +290,13 @@ export default function Page() {
     if (tab === "role" && !jobIntent) api.jobIntent().then(setJobIntent).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, ready]);
+
+  // load shortlists for the current ranking task (Supabase-backed)
+  useEffect(() => {
+    if (ready && taskId) refreshShortlists();
+    else setShortlists([]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, taskId]);
 
   // candidate detail
   useEffect(() => {
@@ -430,43 +520,120 @@ export default function Page() {
               )}
               
               <div className="flex items-center gap-3">
-                {/* Filter Button */}
-                <button
-                  className="btn flex items-center gap-2 bg-white border border-line text-ink-soft hover:bg-gray-50"
-                >
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                  </svg>
-                  Filter
-                </button>
+                {/* Filter Button + Panel */}
+                <div className="relative" ref={filterRef}>
+                  <button
+                    onClick={() => { setShowFilter((s) => !s); setShowExport(false); }}
+                    className={`btn flex items-center gap-2 border ${activeFilterCount > 0 ? "bg-brand-wash border-brand/40 text-brand-dark" : "bg-white border-line text-ink-soft hover:bg-gray-50"}`}
+                  >
+                    <IconFilter className="h-4 w-4" />
+                    Filter
+                    {activeFilterCount > 0 && (
+                      <span className="ml-0.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-brand text-white text-[10px] font-bold">
+                        {activeFilterCount}
+                      </span>
+                    )}
+                  </button>
+                  {showFilter && (
+                    <div className="absolute right-0 top-full mt-1.5 w-72 bg-white border border-line rounded-xl shadow-pop z-20 overflow-hidden">
+                      <div className="flex items-center justify-between px-4 py-2.5 border-b border-line bg-gray-50/60">
+                        <span className="text-xs font-semibold text-ink-soft uppercase tracking-wide">Filters</span>
+                        <button onClick={() => setFilters(DEFAULT_FILTERS)} className="text-xs text-brand hover:underline">Clear all</button>
+                      </div>
+                      <div className="p-4 space-y-4">
+                        {/* Min score */}
+                        <div>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <label className="text-xs font-medium text-ink-soft">Minimum score</label>
+                            <span className="text-xs font-bold tabular-nums text-brand">{filters.minScore}</span>
+                          </div>
+                          <input type="range" min={0} max={100} step={1} value={filters.minScore}
+                            onChange={(e) => setFilters((f) => ({ ...f, minScore: Number(e.target.value) }))}
+                            className="w-full accent-brand cursor-pointer" />
+                        </div>
+                        {/* Experience range */}
+                        <div>
+                          <label className="text-xs font-medium text-ink-soft block mb-1.5">Experience (years)</label>
+                          <div className="flex items-center gap-2">
+                            <input type="number" min={0} max={50} value={filters.minYoe}
+                              onChange={(e) => setFilters((f) => ({ ...f, minYoe: Math.max(0, Number(e.target.value) || 0) }))}
+                              className="w-full bg-white border border-line rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30" placeholder="Min" />
+                            <span className="text-ink-faint text-xs">to</span>
+                            <input type="number" min={0} max={50} value={filters.maxYoe}
+                              onChange={(e) => setFilters((f) => ({ ...f, maxYoe: Number(e.target.value) || 0 }))}
+                              className="w-full bg-white border border-line rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30" placeholder="Max" />
+                          </div>
+                        </div>
+                        {/* Notice period */}
+                        <div>
+                          <label className="text-xs font-medium text-ink-soft block mb-1.5">Notice period</label>
+                          <div className="flex flex-wrap gap-1.5">
+                            {[{ id: "immediate", label: "Immediate" }, { id: "30", label: "≤ 30d" }, { id: "60", label: "≤ 60d" }, { id: "90", label: "90d+" }].map((opt) => (
+                              <button key={opt.id} onClick={() => toggleNotice(opt.id)}
+                                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${filters.notice.includes(opt.id) ? "bg-brand text-white border-brand" : "bg-white text-ink-soft border-line hover:bg-gray-50"}`}>
+                                {opt.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="px-4 py-2.5 border-t border-line bg-gray-50/60 text-xs text-ink-faint">
+                        {filteredLb ? `${filteredLb.items.length} of ${lb?.items.length ?? 0} on this page match` : ""}
+                      </div>
+                    </div>
+                  )}
+                </div>
 
                 {/* Export Button with Dropdown */}
-                <div className="relative group">
+                <div className="relative" ref={exportRef}>
                   <button
-                    onClick={() => window.open(api.exportUrl(exportN), "_blank")}
+                    onClick={() => { setShowExport((s) => !s); setShowFilter(false); }}
                     className="btn flex items-center gap-2 bg-white border border-line text-ink-soft hover:bg-gray-50"
                   >
                     <IconDownload className="h-4 w-4" />
                     Export {exportN > 0 && `(${exportN})`}
                   </button>
-                  {/* Dropdown Menu */}
-                  <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-line rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
-                    <div className="py-1">
+                  {showExport && (
+                    <div className="absolute right-0 top-full mt-1.5 w-56 bg-white border border-line rounded-xl shadow-pop z-20 overflow-hidden">
                       <div className="px-3 py-2 text-xs font-semibold text-ink-faint uppercase tracking-wide border-b border-line">
                         Export candidates
                       </div>
-                      {[10, 25, 50, 100, 200, 500].map((n) => (
-                        <button
-                          key={n}
-                          onClick={() => { setExportN(n); window.open(api.exportUrl(n), "_blank"); }}
-                          className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center justify-between ${exportN === n ? 'text-brand font-medium' : 'text-ink-soft'}`}
-                        >
-                          Top {n} candidates
-                          {exportN === n && <IconCheck className="h-4 w-4" />}
-                        </button>
-                      ))}
+                      <div className="py-1">
+                        {[10, 25, 50, 100, 200, 500].map((n) => (
+                          <button
+                            key={n}
+                            onClick={() => runExport(n)}
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center justify-between ${exportN === n ? 'text-brand font-medium' : 'text-ink-soft'}`}
+                          >
+                            Top {n} candidates
+                            {exportN === n && <IconCheck className="h-4 w-4" />}
+                          </button>
+                        ))}
+                      </div>
+                      {/* Custom count */}
+                      <div className="px-3 py-2.5 border-t border-line">
+                        <label className="text-[11px] font-semibold text-ink-faint uppercase tracking-wide block mb-1.5">Custom amount</label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            min={1}
+                            value={customExport}
+                            onChange={(e) => setCustomExport(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === "Enter") runExport(parseInt(customExport, 10)); }}
+                            placeholder="e.g. 75"
+                            className="w-full bg-white border border-line rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30"
+                          />
+                          <button
+                            onClick={() => runExport(parseInt(customExport, 10))}
+                            disabled={!customExport || parseInt(customExport, 10) < 1}
+                            className="btn-primary px-3 py-1.5 text-sm disabled:opacity-50 shrink-0"
+                          >
+                            Export
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -480,7 +647,7 @@ export default function Page() {
                 : tab === "nextai" ? <NextAiView ready={ready} />
                 : tab === "compare" ? <CompareView ids={compareIds} setIds={setCompareIds} ready={ready} cols={4} />
                 : !ready ? (tab === "candidates" ? <LeaderboardEmptyHeader /> : <Empty />)
-                : tab === "candidates" ? (lb ? <Leaderboard data={lb} page={page} setPage={setPage} onSelect={setSelId} compareIds={compareIds} onToggleCompare={toggleCompare} /> : <Empty />)
+                : tab === "candidates" ? (filteredLb ? <Leaderboard data={filteredLb} page={page} setPage={setPage} onSelect={setSelId} compareIds={compareIds} onToggleCompare={toggleCompare} shortlists={shortlists} onAddToShortlist={taskId ? addToShortlist : undefined} onCreateShortlist={taskId ? createShortlist : undefined} /> : <Empty />)
                 : tab === "insights" ? <InsightsView a={analytics} />
                 : tab === "governance" ? <GovernanceView c={compliance} />
                 : tab === "integrity" ? <IntegrityView h={honeypots!} />
@@ -590,33 +757,35 @@ function KpiSkeleton({ running }: { running: boolean }) {
 }
 
 function LeaderboardEmptyHeader() {
+  const cols = "grid-cols-[60px_minmax(150px,1fr)_minmax(240px,1.25fr)_80px_120px_130px_230px]";
   return (
     <div className="card overflow-hidden">
-      <div className="grid grid-cols-[64px_1fr_180px_120px_minmax(220px,1fr)] gap-4 px-5 py-3 border-b border-line text-[11px] font-bold tracking-wide text-ink-faint uppercase">
-        <div>Rank</div><div>Candidate</div><div>Composite</div><div>Council</div><div>Signals</div>
+      <div className={`grid ${cols} items-center gap-4 px-5 py-3 border-b border-gray-200 bg-gray-50/50 text-[11px] font-semibold tracking-wide text-gray-500 uppercase`}>
+        <div className="text-center">Rank</div>
+        <div className="text-center">Candidate ID</div>
+        <div>Current Role</div>
+        <div className="text-center">Score</div>
+        <div className="text-center">Experience</div>
+        <div className="text-center">Notice Period</div>
+        <div><span className="inline-block w-[92px] text-center">Actions</span></div>
       </div>
-      <div className="divide-y divide-line">
+      <div className="divide-y divide-gray-100">
         {/* Empty state with placeholder rows */}
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="grid grid-cols-[64px_1fr_180px_120px_minmax(220px,1fr)] gap-4 px-5 py-3.5 items-center">
-            <div className="text-ink-faint font-semibold tabular-nums">—</div>
+          <div key={i} className={`grid ${cols} items-center gap-4 px-5 py-3.5`}>
+            <div className="text-center">
+              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-ink-faint text-xs font-semibold">—</span>
+            </div>
+            <div className="min-w-0 text-center"><div className="font-mono text-xs text-ink-faint">—</div></div>
             <div className="min-w-0">
-              <div className="font-semibold text-ink">—</div>
-              <div className="text-xs text-ink-faint">— · — yrs</div>
+              <div className="font-semibold text-ink-faint truncate text-sm">—</div>
+              <div className="text-xs text-ink-faint truncate mt-0.5">—</div>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
-                <div className="h-full rounded-full" style={{ width: `0%` }} />
-              </div>
-              <span className="text-sm font-bold tabular-nums w-9 text-right">—</span>
-            </div>
-            <div className="flex items-end gap-[3px] h-7">
-              {Array.from({ length: 6 }).map((_, j) => (
-                <span key={j} className="w-[5px] rounded-sm bg-gray-100" style={{ height: `8%` }} />
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              <span className="pill bg-gray-100 text-ink-faint">—</span>
+            <div className="text-center text-sm font-bold text-ink-faint">—</div>
+            <div className="text-center text-sm text-ink-faint">—</div>
+            <div className="flex justify-center"><span className="pill bg-gray-100 text-ink-faint">—</span></div>
+            <div className="flex justify-start gap-1.5">
+              <span className="h-7 w-20 rounded-full bg-gray-100" />
             </div>
           </div>
         ))}

@@ -10,12 +10,27 @@ export type Row = {
   location_match: boolean; active: boolean; notice_days: number;
 };
 
+export type Insight = { label: string; detail: string };
+export type RiskFactor = { label: string; severity: "low" | "medium" | "high" };
+export type ScoreBreakdownItem = { key: string; label: string; score: number; weight: number; points: number };
+export type MissingQual = { label: string; kind: "skill" | "experience" };
+export type SimilarRole = { role: string; match: number };
+
 export type Detail = Row & {
   summary: string; reasoning: string;
   rationales: Record<string, string>;
   verified_skills: string[]; all_skills: string[];
   education: { degree: string; field: string; institution: string; tier: string }[];
   career: { title: string; company: string; months: number; start: string; end: string; description: string }[];
+  strengths?: Insight[];
+  weaknesses?: Insight[];
+  risk?: { score: number; level: "low" | "medium" | "high"; factors: RiskFactor[] };
+  missing_qualifications?: MissingQual[];
+  must_have_coverage?: number;
+  must_have_total?: number;
+  must_have_covered?: number;
+  score_breakdown?: ScoreBreakdownItem[];
+  similar_roles?: SimilarRole[];
 };
 
 export type Status = {
@@ -23,6 +38,7 @@ export type Status = {
   message: string; role: string | null; file: string | null;
   file_size_mb: number | null; ingested: number; ranked: number;
   honeypots: number; runtime: number;
+  task_id?: string | null; task_name?: string | null; persisted?: boolean;
 };
 
 export type WeightPct = { key: string; label: string; pct: number };

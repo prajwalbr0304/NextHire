@@ -33,6 +33,8 @@ export const IconDatabase = (p: P) => (<S {...p}><ellipse cx="12" cy="5" rx="9" 
 export const IconLayers = (p: P) => (<S {...p}><path d="M12 2l9 5-9 5-9-5 9-5z"/><path d="M3 12l9 5 9-5"/><path d="M3 17l9 5 9-5"/></S>);
 export const IconEye = (p: P) => (<S {...p}><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></S>);
 export const IconCompare = (p: P) => (<S {...p}><rect x="2" y="8" width="8" height="13" rx="1"/><rect x="14" y="8" width="8" height="13" rx="1"/><path d="M10 8V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3"/><path d="M10 16v3a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-3"/><path d="M14 16v3a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-3"/></S>);
+export const IconBalance = (p: P) => (<S {...p}><path d="M12 3v18"/><path d="M7 21h10"/><path d="M5 7h14"/><path d="M8 4l-3 3"/><path d="M16 4l3 3"/><path d="M5 7l-3 6a3 3 0 0 0 6 0l-3-6z"/><path d="M19 7l-3 6a3 3 0 0 0 6 0l-3-6z"/></S>);
+export const IconFilter = (p: P) => (<S {...p}><path d="M3 5h18l-7 8v6l-4-2v-4L3 5z"/></S>);
 export const IconStar = ({ className, filled }: P & { filled?: boolean }) => (
   <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill={filled ? "currentColor" : "none"}/>

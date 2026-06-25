@@ -29,7 +29,7 @@ export default function Sidebar({
         {!collapsed && (
           <div>
             <div className="font-bold text-[15px] leading-tight">Nexthire</div>
-            <div className="text-xs text-ink-faint">Candidate Intelligence</div>
+            <div className="text-xs text-ink-faint">Precision in every hire</div>
           </div>
         )}
       </div>
