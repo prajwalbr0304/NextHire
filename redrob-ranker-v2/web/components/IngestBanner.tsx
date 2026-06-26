@@ -53,7 +53,7 @@ export default function IngestBanner({
       onClick={() => inputRef.current?.click()}
       className={`relative overflow-hidden rounded-xl border cursor-pointer transition
         ${drag ? "border-brand ring-2 ring-brand/30" : "border-line"}`}
-      style={{ background: "linear-gradient(100deg,#fdf2f8 0%,#f5f3ff 45%,#eef2ff 100%)" }}>
+      style={{ background: "linear-gradient(100deg,#F3FCF9 0%,#E7F8F3 55%,#DFF7EF 100%)" }}>
       <input ref={inputRef} type="file" accept=".json,.jsonl" className="hidden"
         onChange={(e) => pick(e.target.files?.[0])} />
       <div className="flex items-center gap-4 px-5 py-4">
@@ -73,7 +73,7 @@ export default function IngestBanner({
           {uploading && <span className="pill bg-brand/10 text-brand-dark border border-brand/20">Uploading…</span>}
           {!uploading && running && <span className="pill bg-brand/10 text-brand-dark border border-brand/20">Ranking…</span>}
           {!uploading && !running && staged && (
-            <span className="pill bg-violet-100 text-violet-700 border border-violet-200">Staged · new file</span>
+            <span className="pill bg-brand-wash text-brand-dark border border-brand/20">Staged · new file</span>
           )}
           {!uploading && !running && !staged && done && (
             <span className="pill bg-positive/10 text-positive border border-positive/20">
@@ -89,7 +89,7 @@ export default function IngestBanner({
           <div className="hidden md:block w-44 h-1.5 rounded-full bg-white/70 overflow-hidden">
             <div className={`h-full rounded-full ${running || uploading ? "animate-pulse" : ""}`}
               style={{ width: done ? "100%" : running ? "66%" : staged ? "33%" : "8%",
-                background: "linear-gradient(90deg,#ec4899,#635bff)" }} />
+                background: "linear-gradient(90deg,#34B794,#10A37F)" }} />
           </div>
         </div>
       </div>

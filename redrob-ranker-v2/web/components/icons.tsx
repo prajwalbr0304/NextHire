@@ -35,6 +35,9 @@ export const IconEye = (p: P) => (<S {...p}><path d="M2 12s3-7 10-7 10 7 10 7-3 
 export const IconCompare = (p: P) => (<S {...p}><rect x="2" y="8" width="8" height="13" rx="1"/><rect x="14" y="8" width="8" height="13" rx="1"/><path d="M10 8V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3"/><path d="M10 16v3a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-3"/><path d="M14 16v3a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-3"/></S>);
 export const IconBalance = (p: P) => (<S {...p}><path d="M12 3v18"/><path d="M7 21h10"/><path d="M5 7h14"/><path d="M8 4l-3 3"/><path d="M16 4l3 3"/><path d="M5 7l-3 6a3 3 0 0 0 6 0l-3-6z"/><path d="M19 7l-3 6a3 3 0 0 0 6 0l-3-6z"/></S>);
 export const IconFilter = (p: P) => (<S {...p}><path d="M3 5h18l-7 8v6l-4-2v-4L3 5z"/></S>);
+export const IconMenu = (p: P) => (<S {...p}><path d="M3 6h18M3 12h18M3 18h18"/></S>);
+export const IconCopy = (p: P) => (<S {...p}><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></S>);
+export const IconPencil = (p: P) => (<S {...p}><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></S>);
 export const IconStar = ({ className, filled }: P & { filled?: boolean }) => (
   <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill={filled ? "currentColor" : "none"}/>
@@ -45,12 +48,12 @@ export const IconStar = ({ className, filled }: P & { filled?: boolean }) => (
 export const IconDonut = (p: P) => (
   <svg className={p.className} viewBox="0 0 24 24" fill="none">
     {/* Outer ring segments with different colors */}
-    <circle cx="12" cy="12" r="10" stroke="#635bff" strokeWidth="2.5" strokeDasharray="12 52" strokeDashoffset="0" strokeLinecap="round" transform="rotate(-90 12 12)" />
+    <circle cx="12" cy="12" r="10" stroke="#10A37F" strokeWidth="2.5" strokeDasharray="12 52" strokeDashoffset="0" strokeLinecap="round" transform="rotate(-90 12 12)" />
     <circle cx="12" cy="12" r="10" stroke="#f59e0b" strokeWidth="2.5" strokeDasharray="10 52" strokeDashoffset="-12" strokeLinecap="round" transform="rotate(-90 12 12)" />
     <circle cx="12" cy="12" r="10" stroke="#10b981" strokeWidth="2.5" strokeDasharray="14 52" strokeDashoffset="-22" strokeLinecap="round" transform="rotate(-90 12 12)" />
     <circle cx="12" cy="12" r="10" stroke="#ec4899" strokeWidth="2.5" strokeDasharray="8 52" strokeDashoffset="-36" strokeLinecap="round" transform="rotate(-90 12 12)" />
     <circle cx="12" cy="12" r="10" stroke="#06b6d4" strokeWidth="2.5" strokeDasharray="10 52" strokeDashoffset="-44" strokeLinecap="round" transform="rotate(-90 12 12)" />
-    <circle cx="12" cy="12" r="10" stroke="#8b5cf6" strokeWidth="2.5" strokeDasharray="10 52" strokeDashoffset="-54" strokeLinecap="round" transform="rotate(-90 12 12)" />
+    <circle cx="12" cy="12" r="10" stroke="#3b82f6" strokeWidth="2.5" strokeDasharray="10 52" strokeDashoffset="-54" strokeLinecap="round" transform="rotate(-90 12 12)" />
     {/* Center circle for donut hole effect */}
     <circle cx="12" cy="12" r="4" fill="white" />
   </svg>

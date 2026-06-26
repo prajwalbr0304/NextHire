@@ -124,15 +124,50 @@ export type Shortlist = {
 export type ChatMessage = { role: "user" | "assistant"; content: string };
 export type NextAiStatus = { configured: boolean; provider: string; model: string };
 
-export type Honeypots = { items: { candidate_id: string; title: string; reasons: string[] }[]; total: number };
+export type HoneypotItem = {
+  candidate_id: string; title: string; company?: string;
+  violation_key: string; violation_type: string;
+  flagged_skill: string | null;
+  claimed_label: string; claimed_value: string;
+  baseline_label: string; baseline_value: string;
+  delta: string | null;
+  severity: "critical" | "high" | "medium";
+  reasons: string[];
+};
+export type Honeypots = {
+  items: HoneypotItem[];
+  total: number; showing?: number;
+  most_common_violation?: string; inflation_rate?: number;
+  violation_counts?: { type: string; count: number }[];
+};
 
 export type Log = {
   seq?: number; ts: string; level: "info" | "success" | "warn" | "error";
   source: "frontend" | "backend"; msg: string;
 };
 
+export type RoleConfidence = {
+  score: number; label: string;
+  skill_coverage: number; title_clarity: number; noise_rejection: number;
+  status: string; status_ok: boolean; model_version: string;
+};
+export type RoleStats = {
+  candidates_in_pool: number; must_have_count: number; nice_to_have_count: number;
+  positive_title_count: number; blocked_title_count: number;
+};
+export type RoleRetrieval = {
+  embedding_model: string; embedding_backend: string; vector_store: string;
+  top_k: number; rerank_size: number; dense_dim: number;
+};
+export type RoleWeight = { key: string; label: string; pct: number };
+export type SignalConflict = { signal: string; severity: string; message: string };
+export type RoleActivity = { type: string; ts: string; label: string };
+
 export type JobIntent = {
   role_title: string; must_have: string[]; nice_to_have: string[];
   positive_titles: string[]; negative_titles: string[];
   product_industries: string[]; services_companies: string[]; query_text: string;
+  role_id?: string; last_indexed?: string;
+  confidence?: RoleConfidence; stats?: RoleStats; retrieval?: RoleRetrieval;
+  weights?: RoleWeight[]; signal_conflicts?: SignalConflict[]; activity_log?: RoleActivity[];
 };

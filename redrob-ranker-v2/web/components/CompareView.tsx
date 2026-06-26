@@ -15,7 +15,7 @@ const COUNCIL: [string, string][] = [
 ];
 const MAX = 4;
 
-const COLORS = ["#635bff", "#06b6d4", "#10b981", "#f59e0b"];
+const COLORS = ["#10A37F", "#06b6d4", "#f59e0b", "#ec4899"];
 
 function bestIndex(vals: (number | null)[]): number {
   let bi = -1, bv = -Infinity;

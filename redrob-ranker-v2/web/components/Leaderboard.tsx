@@ -167,6 +167,8 @@ export default function Leaderboard({
 }) {
   return (
     <div className="card overflow-hidden">
+      <div className="overflow-x-auto">
+        <div className="min-w-[1100px]">
       {/* Header */}
       <div className={`grid ${GRID_COLS} items-center gap-4 px-5 py-3 border-b border-gray-200 bg-gray-50/50 text-[11px] font-semibold tracking-wide text-gray-500 uppercase`}>
         <div className="text-center">Rank</div>
@@ -244,6 +246,8 @@ export default function Leaderboard({
         ))}
       </div>
 
+        </div>
+      </div>
       {/* Pagination */}
       <div className="flex items-center justify-between px-5 py-3 border-t border-gray-200 bg-gray-50/50 text-sm">
         <div className="text-gray-500">

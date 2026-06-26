@@ -6,7 +6,12 @@ const config: Config = {
     extend: {
       colors: {
         ink: { DEFAULT: "#1a1f36", soft: "#3c4257", muted: "#697386", faint: "#8792a2" },
-        brand: { DEFAULT: "#635bff", dark: "#4f46e5", light: "#7a73ff", wash: "#f5f4ff" },
+        // ChatGPT-style green brand system (centralised token — see globals.css :root)
+        brand: {
+          DEFAULT: "#10A37F", dark: "#0D8F6F", active: "#0B7A5E",
+          light: "#34B794", wash: "#E7F8F3", lighter: "#F3FCF9",
+          c2: "#5AC7A8", c3: "#87D9C1",
+        },
         line: "#e3e8ee",
         canvas: "#f6f8fb",
         positive: "#0e9f6e",

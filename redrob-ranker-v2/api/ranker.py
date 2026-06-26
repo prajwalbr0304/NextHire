@@ -802,14 +802,184 @@ def compliance() -> dict:
     }
 
 
+def _classify_honeypot(c: dict, integ) -> dict:
+    """Turn an integrity flag into a structured violation record for the
+    Integrity dashboard — grounded in the candidate's own declared data."""
+    p = c.get("profile", {}) or {}
+    career = c.get("career_history") or []
+    skills = c.get("skills") or []
+    yoe = float(p.get("years_of_experience") or 0.0)
+    career_months = int(round(yoe * 12))
+    reasons = list(integ[2]) if integ and len(integ) > 2 else []
+    is_hard = bool(integ[1]) if integ and len(integ) > 1 else False
+    cap = yoe * 12 + 36
+
+    worst_skill = None
+    for s in skills:
+        dur = float(s.get("duration_months") or 0)
+        if dur > cap and dur > 24 and (worst_skill is None or dur > worst_skill[1]):
+            worst_skill = (s.get("name") or "—", dur)
+    worst_role = None
+    for r in career:
+        dur = float(r.get("duration_months") or 0)
+        if dur > cap and dur > 24 and (worst_role is None or dur > worst_role[1]):
+            worst_role = (r.get("title") or "—", dur)
+    expert_zero = sum(1 for s in skills
+                      if float(s.get("duration_months") or 0) == 0
+                      and (s.get("proficiency") or "").lower() == "expert")
+    timeline_bad = any(("starts after it ends" in r or "starts in the future" in r)
+                       for r in reasons)
+
+    rec = {
+        "candidate_id": c.get("candidate_id"),
+        "title": p.get("current_title", "—"),
+        "company": p.get("current_company", ""),
+        "violation_key": "logic",
+        "violation_type": "Logical inconsistency",
+        "flagged_skill": None,
+        "claimed_label": "Claimed", "claimed_value": "—",
+        "baseline_label": "Career length", "baseline_value": f"{career_months} mo",
+        "delta": None,
+        "severity": "high" if is_hard else "medium",
+        "reasons": reasons,
+    }
+    if worst_skill:
+        claimed = int(worst_skill[1])
+        rec.update({
+            "violation_key": "skill_duration",
+            "violation_type": "Skill duration exceeded career length",
+            "flagged_skill": worst_skill[0],
+            "claimed_label": "Claimed", "claimed_value": f"{claimed} mo",
+            "baseline_value": f"{career_months} mo",
+            "delta": f"+{claimed - career_months} mo", "severity": "critical",
+        })
+    elif worst_role:
+        claimed = int(worst_role[1])
+        rec.update({
+            "violation_key": "career_anomaly",
+            "violation_type": "Role longer than entire career",
+            "flagged_skill": worst_role[0],
+            "claimed_label": "Role tenure", "claimed_value": f"{claimed} mo",
+            "baseline_value": f"{career_months} mo",
+            "delta": f"+{claimed - career_months} mo", "severity": "critical",
+        })
+    elif timeline_bad:
+        rec.update({
+            "violation_key": "career_anomaly",
+            "violation_type": "Career timeline anomaly",
+            "claimed_label": "Timeline", "claimed_value": "Contradictory",
+            "severity": "critical",
+        })
+    elif expert_zero >= 3:
+        rec.update({
+            "violation_key": "keyword_stuffing",
+            "violation_type": "Keyword stuffing",
+            "flagged_skill": f"{expert_zero} ‘expert’ skills",
+            "claimed_label": "Expert skills", "claimed_value": str(expert_zero),
+            "baseline_label": "With usage", "baseline_value": "0",
+            "severity": "high" if expert_zero >= 5 else "medium",
+        })
+    return rec
+
+
 def honeypots(limit: int = 200) -> dict:
-    out = []
-    for c, integ in STATE["honeypots"][:limit]:
-        p = c.get("profile", {})
-        out.append({"candidate_id": c.get("candidate_id"),
-                    "title": p.get("current_title", "—"),
-                    "reasons": integ[2]})
-    return {"items": out, "total": len(STATE["honeypots"])}
+    all_hp = STATE["honeypots"]
+    items = [_classify_honeypot(c, integ) for c, integ in all_hp[:limit]]
+    type_counter = Counter(_classify_honeypot(c, integ)["violation_type"] for c, integ in all_hp)
+    total = len(all_hp)
+    ingested = STATE.get("ingested", 0) or (total + len(STATE.get("rows") or []))
+    most_common = type_counter.most_common(1)[0][0] if type_counter else "—"
+    inflation = round((total / ingested) * 100, 1) if ingested else 0.0
+    return {
+        "items": items,
+        "total": total,
+        "showing": len(items),
+        "most_common_violation": most_common,
+        "inflation_rate": inflation,
+        "violation_counts": [{"type": t, "count": n} for t, n in type_counter.most_common()],
+    }
+
+
+ROLE_MODEL_VERSION = "Council-of-Nine v2.0"
+
+# Broad/ambiguous positive-title terms that can pull in adjacent-domain candidates.
+_AMBIGUOUS_TITLES = {
+    "mobile developer": "may surface React Native / cross-platform candidates outside the core track",
+    "full stack": "is broad — can admit front-end-heavy profiles with thin back-end depth",
+    "fullstack": "is broad — can admit front-end-heavy profiles with thin back-end depth",
+    "full-stack": "is broad — can admit front-end-heavy profiles with thin back-end depth",
+    "developer": "is generic — may match junior or off-track engineering profiles",
+    "sde": "is generic — may match candidates across unrelated engineering domains",
+    "analytics": "overlaps data-analyst and BI roles; verify domain alignment",
+    "research scientist": "may surface academic profiles without production delivery",
+}
+
+
+def _slugify(name: str) -> str:
+    s = (name or "role").lower()
+    slug = "".join(ch if ch.isalnum() else "-" for ch in s)
+    while "--" in slug:
+        slug = slug.replace("--", "-")
+    return "role-" + (slug.strip("-")[:40] or "custom")
+
+
+def _clamp01(x: float) -> float:
+    return max(0.0, min(1.0, x))
+
+
+def _role_confidence(jd: dict) -> dict:
+    """Grounded confidence in the model's interpretation, derived from the
+    richness of the extracted signals (must-haves, title filters, anti-noise)."""
+    must = [m for m in jd.get("must_have_capabilities", []) if m]
+    nice = [m for m in jd.get("nice_to_have", []) if m]
+    pos = [t for t in jd.get("positive_titles", []) if t]
+    neg = [t for t in jd.get("negative_titles", []) if t]
+    off = [s for s in jd.get("offdomain_skills", []) if s]
+    skill_coverage = _clamp01(0.45 + 0.035 * len(must) + 0.015 * len(nice))
+    title_clarity = _clamp01(0.35 + 0.045 * len(pos) + (0.10 if neg else 0.0))
+    noise_rejection = _clamp01(0.30 + 0.05 * len(neg) + 0.03 * len(off))
+    overall = 0.40 * skill_coverage + 0.30 * title_clarity + 0.30 * noise_rejection
+    score = round(overall * 100)
+    label = ("Strong interpretation" if score >= 75
+             else "Ambiguous" if score >= 55 else "Weak interpretation")
+    ready = score >= 65 and len(must) >= 4 and bool(neg)
+    return {
+        "score": score, "label": label,
+        "skill_coverage": round(skill_coverage * 100),
+        "title_clarity": round(title_clarity * 100),
+        "noise_rejection": round(noise_rejection * 100),
+        "status": "Ready to rank" if ready else "Needs review",
+        "status_ok": ready, "model_version": ROLE_MODEL_VERSION,
+    }
+
+
+def _signal_conflicts(jd: dict) -> list:
+    seen, out = set(), []
+    for t in jd.get("positive_titles", []):
+        tl = (t or "").lower().strip()
+        for term, note in _AMBIGUOUS_TITLES.items():
+            if (term == tl or (len(term) > 4 and term in tl)) and t not in seen:
+                seen.add(t)
+                out.append({"signal": t, "severity": "warning",
+                            "message": f"Positive signal “{t}” {note}."})
+                break
+    return out[:5]
+
+
+def _role_activity(jd: dict) -> list:
+    started = STATE.get("started_at")
+    n = len(STATE.get("rows") or [])
+    musts = len([m for m in jd.get("must_have_capabilities", []) if m])
+    base = _dt.datetime.fromtimestamp(started) if started else _dt.datetime.now()
+    acts = []
+    if n:
+        acts.append({"type": "ranking", "ts": base.isoformat(),
+                     "label": f"Ranking run · {n:,} candidates scored ({STATE.get('runtime', 0)}s)"})
+        acts.append({"type": "index", "ts": base.isoformat(),
+                     "label": f"Vector index rebuilt · {musts} must-have signals embedded"})
+    acts.append({"type": "edit", "ts": base.isoformat(),
+                 "label": "Role interpretation loaded from catalogue"})
+    return acts
 
 
 def job_intent() -> dict:
@@ -823,6 +993,31 @@ def job_intent() -> dict:
         "product_industries": jd.get("product_industries", []),
         "services_companies": jd.get("services_companies", []),
         "query_text": jd.get("query_text", ""),
+        # --- enriched model-interpretation fields (Role dashboard) ---
+        "role_id": _slugify(jd.get("role_title") or STATE.get("role") or "role"),
+        "last_indexed": (_dt.datetime.fromtimestamp(STATE["started_at"]).isoformat()
+                         if STATE.get("started_at") else _dt.datetime.now().isoformat()),
+        "confidence": _role_confidence(jd),
+        "stats": {
+            "candidates_in_pool": STATE.get("ingested", 0) or len(STATE.get("rows") or []),
+            "must_have_count": len([m for m in jd.get("must_have_capabilities", []) if m]),
+            "nice_to_have_count": len([m for m in jd.get("nice_to_have", []) if m]),
+            "positive_title_count": len([t for t in jd.get("positive_titles", []) if t]),
+            "blocked_title_count": len([t for t in jd.get("negative_titles", []) if t]),
+        },
+        "retrieval": {
+            "embedding_model": config.ST_MODEL_NAME,
+            "embedding_backend": config.EMBED_BACKEND,
+            "vector_store": "Hybrid TF-IDF (lexical) + LSA dense, fused via RRF",
+            "top_k": config.SHORTLIST_SIZE,
+            "rerank_size": config.RERANK_SIZE,
+            "dense_dim": config.DENSE_DIM,
+        },
+        "weights": [{"key": k, "label": COUNCIL_LABELS[k],
+                     "pct": round(STATE["weights"].get(k, config.COUNCIL_WEIGHTS.get(k, 0)) * 100)}
+                    for k in COUNCIL_KEYS],
+        "signal_conflicts": _signal_conflicts(jd),
+        "activity_log": _role_activity(jd),
     }
 
 

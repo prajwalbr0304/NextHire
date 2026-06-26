@@ -22,7 +22,7 @@ function Kpi({ icon, label, value, sub, tone = "ink" }: {
 export default function Kpis({ s }: { s: Summary }) {
   const i = (C: any) => <C className="h-4 w-4" />;
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-3.5">
       <Kpi icon={i(IconUsers)} label="Candidates ranked" value={s.ranked.toLocaleString()}
         sub={`of ${s.ingested.toLocaleString()} ingested`} />
       <Kpi icon={i(IconSpark)} label="Strong matches" value={s.strong_matches.toLocaleString()}

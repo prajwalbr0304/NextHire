@@ -22,16 +22,16 @@ export default function InsightsView({ a }: { a: Analytics | null }) {
     <div className="space-y-4">
       {/* KPI strip */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
-        <StatTile label="Candidates analysed" value={totalRanked.toLocaleString()} sub="passed integrity" accent="#635bff" />
+        <StatTile label="Candidates analysed" value={totalRanked.toLocaleString()} sub="passed integrity" accent="#10A37F" />
         <StatTile label="Elite (90+)" value={elite.toLocaleString()} sub={`${totalRanked ? ((elite / totalRanked) * 100).toFixed(1) : 0}% of pool`} accent="#0e9f6e" />
         <StatTile label="Top skill" value={topSkill ? topSkill.name : "—"} sub={topSkill ? `${topSkill.count.toLocaleString()} candidates` : ""} accent="#06b6d4" />
-        <StatTile label="Top location" value={topLoc ? topLoc.label : "—"} sub={topLoc ? `${topLoc.count.toLocaleString()} candidates` : ""} accent="#8b5cf6" />
+        <StatTile label="Top location" value={topLoc ? topLoc.label : "—"} sub={topLoc ? `${topLoc.count.toLocaleString()} candidates` : ""} accent="#3b82f6" />
       </div>
 
       {/* Distributions */}
       <div className="grid lg:grid-cols-2 gap-4">
         <ChartCard title="Relevance score distribution" subtitle="A healthy power-law: a few elite, many marginal.">
-          <AreaChart data={a.score_hist.map((d) => ({ label: d.bucket, count: d.count }))} color="#635bff" />
+          <AreaChart data={a.score_hist.map((d) => ({ label: d.bucket, count: d.count }))} color="#10A37F" />
         </ChartCard>
         <ChartCard title="Experience (years) distribution" subtitle="Where the ranked pool sits on seniority.">
           <BarsV data={a.yoe_hist.map((d) => ({ label: d.bucket, count: d.count }))} color="#06b6d4" />
@@ -43,7 +43,7 @@ export default function InsightsView({ a }: { a: Analytics | null }) {
         <ChartCard title="Top skills across the pool" subtitle="Solid bar = verified (endorsed / used); light bar = total claimed."
           right={<span className="pill bg-brand-wash text-brand-dark">verified vs claimed</span>}>
           <HBars data={a.top_skills.slice(0, 12).map((s) => ({ label: s.name, count: s.count, overlay: s.verified }))}
-            color="#635bff" showOverlay />
+            color="#10A37F" showOverlay />
         </ChartCard>
         <ChartCard title="Quality tiers" subtitle="Composite-score bands across the ranked pool.">
           <DonutChart data={a.tiers} centerLabel="ranked" />
@@ -76,7 +76,7 @@ export default function InsightsView({ a }: { a: Analytics | null }) {
           <StackedBar data={company} />
         </ChartCard>
         <ChartCard title="Council scorer profile" subtitle="Average of the six additive sub-scorers across all ranked candidates.">
-          <Radar axes={a.council_avg.map((s) => ({ label: s.label, value: s.avg }))} color="#635bff" />
+          <Radar axes={a.council_avg.map((s) => ({ label: s.label, value: s.avg }))} color="#10A37F" />
         </ChartCard>
       </div>
 
@@ -86,7 +86,7 @@ export default function InsightsView({ a }: { a: Analytics | null }) {
           <Funnel data={a.funnel} />
         </ChartCard>
         <ChartCard title="Geographic distribution" subtitle="Top candidate locations in the ranked pool.">
-          <HBars data={a.locations} color="#8b5cf6" />
+          <HBars data={a.locations} color="#3b82f6" />
         </ChartCard>
       </div>
     </div>

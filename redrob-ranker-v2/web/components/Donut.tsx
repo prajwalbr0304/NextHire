@@ -2,8 +2,8 @@
 import type { WeightPct } from "@/lib/types";
 
 const COLORS: Record<string, string> = {
-  semantic_seer: "#635bff", name_rectifier: "#f59e0b", evidence_scout: "#10b981",
-  mask_piercer: "#ec4899", path_reader: "#06b6d4", terrain_master: "#8b5cf6",
+  semantic_seer: "#10A37F", name_rectifier: "#f59e0b", evidence_scout: "#10b981",
+  mask_piercer: "#ec4899", path_reader: "#06b6d4", terrain_master: "#3b82f6",
 };
 
 export default function Donut({ weights }: { weights: WeightPct[] }) {

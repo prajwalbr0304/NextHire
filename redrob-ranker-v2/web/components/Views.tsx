@@ -1,7 +1,7 @@
 "use client";
 import type { Analytics, Compliance, Honeypots, JobIntent } from "@/lib/types";
 
-function BarChart({ data, color = "#635bff" }: { data: { bucket: string; count: number }[]; color?: string }) {
+function BarChart({ data, color = "#10A37F" }: { data: { bucket: string; count: number }[]; color?: string }) {
   const max = Math.max(1, ...data.map((d) => d.count));
   return (
     <div className="mt-3">

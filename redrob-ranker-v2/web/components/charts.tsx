@@ -3,13 +3,13 @@ import { useState } from "react";
 
 // Shared categorical palette (matches the Council/brand colours).
 export const PALETTE = [
-  "#635bff", "#06b6d4", "#10b981", "#f59e0b",
-  "#ec4899", "#8b5cf6", "#0e9f6e", "#e25950",
+  "#10A37F", "#06b6d4", "#10b981", "#f59e0b",
+  "#ec4899", "#3b82f6", "#0e9f6e", "#e25950",
 ];
 
 export const COUNCIL_COLORS: Record<string, string> = {
-  semantic_seer: "#635bff", name_rectifier: "#f59e0b", evidence_scout: "#10b981",
-  mask_piercer: "#ec4899", path_reader: "#06b6d4", terrain_master: "#8b5cf6",
+  semantic_seer: "#10A37F", name_rectifier: "#f59e0b", evidence_scout: "#10b981",
+  mask_piercer: "#ec4899", path_reader: "#06b6d4", terrain_master: "#3b82f6",
 };
 
 // ---------------------------------------------------------------------------
@@ -39,7 +39,7 @@ export function ChartCard({
 // Vertical bar chart (with hover value)
 // ---------------------------------------------------------------------------
 export function BarsV({
-  data, color = "#635bff", height = 170, unit = "",
+  data, color = "#10A37F", height = 170, unit = "",
 }: { data: { label: string; count: number }[]; color?: string; height?: number; unit?: string }) {
   const max = Math.max(1, ...data.map((d) => d.count));
   const [hover, setHover] = useState<number | null>(null);
@@ -75,7 +75,7 @@ export function BarsV({
 // Smooth area + line chart (good for distributions)
 // ---------------------------------------------------------------------------
 export function AreaChart({
-  data, color = "#635bff", height = 190,
+  data, color = "#10A37F", height = 190,
 }: { data: { label: string; count: number }[]; color?: string; height?: number }) {
   const W = 560, H = height, pad = 8;
   const max = Math.max(1, ...data.map((d) => d.count));
@@ -124,7 +124,7 @@ export function AreaChart({
 // Horizontal bars (with optional "verified" overlay)
 // ---------------------------------------------------------------------------
 export function HBars({
-  data, color = "#635bff", showOverlay = false,
+  data, color = "#10A37F", showOverlay = false,
 }: {
   data: { label: string; count: number; overlay?: number }[];
   color?: string; showOverlay?: boolean;
@@ -205,7 +205,7 @@ export function DonutChart({
 // Radar / spider chart (great for the 6 Council scorers)
 // ---------------------------------------------------------------------------
 export function Radar({
-  axes, color = "#635bff", size = 260,
+  axes, color = "#10A37F", size = 260,
 }: { axes: { label: string; value: number }[]; color?: string; size?: number }) {
   const cx = size / 2, cy = size / 2, R = size / 2 - 46;
   const n = axes.length;
@@ -246,7 +246,7 @@ export function Radar({
 // Heatmap (skills × proficiency)
 // ---------------------------------------------------------------------------
 export function Heatmap({
-  rows, cols, matrix, base = "99,91,255",
+  rows, cols, matrix, base = "16,163,127",
 }: { rows: string[]; cols: string[]; matrix: number[][]; base?: string }) {
   const max = Math.max(1, ...matrix.flat());
   return (
@@ -343,7 +343,7 @@ export function StackedBar({ data }: { data: { label: string; count: number; col
 // Small KPI tile
 // ---------------------------------------------------------------------------
 export function StatTile({
-  label, value, sub, accent = "#635bff", icon,
+  label, value, sub, accent = "#10A37F", icon,
 }: { label: string; value: string; sub?: string; accent?: string; icon?: React.ReactNode }) {
   return (
     <div className="card p-4">

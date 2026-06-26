@@ -7,17 +7,19 @@ import Controls, { Weights, Params } from "@/components/Controls";
 import Leaderboard from "@/components/Leaderboard";
 import CandidateDrawer from "@/components/CandidateDrawer";
 import Logs from "@/components/Logs";
-import { IntegrityView, JobIntentView, Empty } from "@/components/Views";
+import { Empty } from "@/components/Views";
 import InsightsView from "@/components/InsightsView";
 import GovernanceView from "@/components/GovernanceView";
 import CompareView from "@/components/CompareView";
 import PipelineView from "@/components/PipelineView";
 import NextAiView from "@/components/NextAiView";
+import RoleView from "@/components/RoleView";
+import IntegrityView from "@/components/IntegrityView";
 import { api } from "@/lib/api";
 import type {
   Analytics, Compliance, Detail, Honeypots, JobIntent, Leaderboard as LB, Log, Status, Summary, Shortlist, Row,
 } from "@/lib/types";
-import { IconDownload, IconUpload, IconChevron, IconDonut, IconClose, IconUsers, IconSpark, IconAlert, IconClock, IconBolt, IconSearch, IconCheck, IconRefresh, IconFilter } from "@/components/icons";
+import { IconDownload, IconUpload, IconChevron, IconDonut, IconClose, IconUsers, IconSpark, IconAlert, IconClock, IconBolt, IconSearch, IconCheck, IconRefresh, IconFilter, IconMenu } from "@/components/icons";
 
 type Filters = { minScore: number; minYoe: number; maxYoe: number; notice: string[] };
 const DEFAULT_FILTERS: Filters = { minScore: 0, minYoe: 0, maxYoe: 50, notice: [] };
@@ -79,6 +81,7 @@ export default function Page() {
   const [feLogs, setFeLogs] = useState<Log[]>([]);
   const [beLogs, setBeLogs] = useState<Log[]>([]);
   const [showWeightsModal, setShowWeightsModal] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const poll = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const ready = status.status === "done" && (summary?.ranked ?? 0) > 0;
@@ -324,15 +327,28 @@ export default function Page() {
   };
 
   return (
-    <div className="flex">
-      <Sidebar tab={tab} setTab={setTab} />
-      <main className="flex-1 min-w-0">
-        {tab === "candidates" && <TopBar tabLabel={tab} />}
-        <div className="px-7 py-6 space-y-5">
+    <div className="flex"> 
+      <Sidebar tab={tab} setTab={setTab} mobileOpen={mobileNavOpen} onMobileClose={() => setMobileNavOpen(false)} />
+      <main className="flex-1 min-w-0"> 
+        {tab === "candidates" && <TopBar tabLabel={tab} onMenuClick={() => setMobileNavOpen(true)} />}
+        <div className="px-4 sm:px-6 lg:px-7 py-4 sm:py-6 space-y-5">
+          {/* Mobile top bar with hamburger (candidates tab carries it in TopBar) */}
+          {tab !== "candidates" && (
+            <div className="lg:hidden flex items-center gap-3">
+              <button
+                onClick={() => setMobileNavOpen(true)}
+                className="p-2 -ml-1 rounded-lg border border-line bg-white text-ink-soft hover:bg-gray-50"
+                aria-label="Open navigation menu"
+              >
+                <IconMenu className="h-5 w-5" />
+              </button>
+              <span className="font-extrabold tracking-tight text-ink">Nexthire</span>
+            </div>
+          )}
           {/* title row - changes based on active tab */}
           <div className="flex items-end justify-between gap-4 flex-wrap">
             <div>
-              <h1 className="text-2xl font-extrabold tracking-tight">
+              <h1 className="text-[clamp(1.25rem,1rem+1.4vw,1.75rem)] font-extrabold tracking-tight">
                 {tab === "candidates" ? "Rank and Shortlist" : 
                  tab === "insights" ? "Insights & Analytics" :
                  tab === "integrity" ? "Integrity & Honeypot Detection" :
@@ -468,7 +484,7 @@ export default function Page() {
                 <button
                   onClick={() => setShowWeightsModal(true)}
                   disabled={running}
-                  className="btn-primary flex items-center gap-2 disabled:opacity-50 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700"
+                  className="btn-primary flex items-center gap-2 disabled:opacity-50"
                 >
                   <IconDonut className="h-4 w-4" />
                   Adjust Weights
@@ -482,8 +498,8 @@ export default function Page() {
 
           {/* Search bar - visible from start */}
           {tab === "candidates" && (
-            <div className="flex items-center justify-between gap-3">
-              <div className="relative max-w-md flex-1">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="relative w-full sm:max-w-md sm:flex-1">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint">
                   <IconSearch className="h-4 w-4" />
                 </span>
@@ -650,8 +666,8 @@ export default function Page() {
                 : tab === "candidates" ? (filteredLb ? <Leaderboard data={filteredLb} page={page} setPage={setPage} onSelect={setSelId} compareIds={compareIds} onToggleCompare={toggleCompare} shortlists={shortlists} onAddToShortlist={taskId ? addToShortlist : undefined} onCreateShortlist={taskId ? createShortlist : undefined} /> : <Empty />)
                 : tab === "insights" ? <InsightsView a={analytics} />
                 : tab === "governance" ? <GovernanceView c={compliance} />
-                : tab === "integrity" ? <IntegrityView h={honeypots!} />
-                : tab === "role" ? <JobIntentView j={jobIntent!} />
+                : tab === "integrity" ? <IntegrityView h={honeypots} onLog={(m) => flog("info", m)} />
+                : tab === "role" ? <RoleView j={jobIntent} onRank={onRank} running={running} onReindex={() => api.jobIntent().then(setJobIntent).catch(() => {})} onGoToCandidates={() => setTab("candidates")} />
                 : <Empty />}
             </div>
           )}
@@ -670,7 +686,7 @@ export default function Page() {
           {/* Modal Content */}
           <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden">
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-line bg-gradient-to-r from-indigo-500 to-purple-600">
+            <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-brand to-brand-light">
               <div className="flex items-center gap-3">
                 <IconDonut className="h-5 w-5 text-white" />
                 <h2 className="text-lg font-semibold text-white">Adjust the Council of Nine</h2>
@@ -711,7 +727,7 @@ function Detail2({ label, value }: { label: string; value: string }) {
 
 function KpiSkeleton({ running }: { running: boolean }) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-3.5">
       {/* Candidates ranked */}
       <div className="card p-4">
         <div className="flex items-center gap-2 text-ink-muted text-[13px] font-medium">
@@ -759,7 +775,7 @@ function KpiSkeleton({ running }: { running: boolean }) {
 function LeaderboardEmptyHeader() {
   const cols = "grid-cols-[60px_minmax(150px,1fr)_minmax(240px,1.25fr)_80px_120px_130px_230px]";
   return (
-    <div className="card overflow-hidden">
+    <div className="card overflow-x-auto">
       <div className={`grid ${cols} items-center gap-4 px-5 py-3 border-b border-gray-200 bg-gray-50/50 text-[11px] font-semibold tracking-wide text-gray-500 uppercase`}>
         <div className="text-center">Rank</div>
         <div className="text-center">Candidate ID</div>

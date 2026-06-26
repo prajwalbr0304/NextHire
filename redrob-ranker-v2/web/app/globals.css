@@ -3,12 +3,44 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---------------------------------------------------------------------------
+   Centralised design tokens — ChatGPT-style green system.
+   These mirror the Tailwind `brand` palette so any raw CSS / inline style can
+   reference the same source of truth. Update colours here + tailwind.config.ts.
+--------------------------------------------------------------------------- */
+:root {
+  --primary: #10A37F;          /* ChatGPT green */
+  --primary-hover: #0D8F6F;
+  --primary-active: #0B7A5E;
+  --primary-light: #E7F8F3;
+  --primary-lighter: #F3FCF9;
+
+  --success: #10A37F;
+  --success-light: #DFF7EF;
+
+  /* curated green-led categorical palette for multi-series charts */
+  --chart-1: #10A37F;
+  --chart-2: #34B794;
+  --chart-3: #5AC7A8;
+  --chart-4: #87D9C1;
+
+  --ring: rgba(16, 163, 127, 0.25);
+}
+
+/* dark-mode green accents remain visible (applied if a `.dark` root is added) */
+.dark {
+  --primary: #10A37F;
+  --primary-light: rgba(16, 163, 127, 0.15);
+}
+
 html, body { height: 100%; }
 body {
   background: theme(colors.canvas);
   color: theme(colors.ink.DEFAULT);
   -webkit-font-smoothing: antialiased;
 }
+
+::selection { background: rgba(16, 163, 127, 0.18); }
 
 /* thin custom scrollbars (Stripe-like) */
 *::-webkit-scrollbar { width: 9px; height: 9px; }

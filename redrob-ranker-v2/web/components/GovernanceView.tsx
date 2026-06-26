@@ -169,7 +169,7 @@ export default function GovernanceView({ c }: { c: Compliance | null }) {
             accent={m.passes_four_fifths ? "#0e9f6e" : "#d97706"} />
         ))}
         <StatTile label="Bias flags" value={String(c.overall.n_flags)} sub="for human review" accent={c.overall.n_flags ? "#e25950" : "#0e9f6e"} />
-        <StatTile label="Honeypots excluded" value={String((c.audit as any).honeypots_detected ?? 0)} sub="integrity warden" accent="#8b5cf6" />
+        <StatTile label="Honeypots excluded" value={String((c.audit as any).honeypots_detected ?? 0)} sub="integrity warden" accent="#3b82f6" />
       </div>
 
       <BiasDetection c={c} />

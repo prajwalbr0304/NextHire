@@ -77,9 +77,9 @@ export default function NextAiView({ ready }: { ready: boolean }) {
     <div className="grid lg:grid-cols-[1fr_300px] gap-4">
       {/* Chat */}
       <div className="card flex flex-col h-[calc(100vh-220px)] min-h-[460px] overflow-hidden">
-        <div className="px-5 py-3 border-b border-line flex items-center justify-between bg-gradient-to-r from-indigo-500/5 to-purple-500/5">
+        <div className="px-5 py-3 border-b border-line flex items-center justify-between bg-gradient-to-r from-brand/5 to-brand-light/5">
           <div className="flex items-center gap-2.5">
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 grid place-items-center text-white shadow-sm">
+            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-brand to-brand-light grid place-items-center text-white shadow-sm">
               <IconBolt className="h-5 w-5" />
             </div>
             <div>
@@ -100,7 +100,7 @@ export default function NextAiView({ ready }: { ready: boolean }) {
           {messages.length === 0 && (
             <div className="h-full grid place-items-center text-center">
               <div className="max-w-sm">
-                <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 grid place-items-center text-white mx-auto mb-3">
+                <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-brand to-brand-light grid place-items-center text-white mx-auto mb-3">
                   <IconSpark className="h-6 w-6" />
                 </div>
                 <div className="font-semibold text-ink">Ask anything about your rank list</div>
@@ -139,7 +139,7 @@ export default function NextAiView({ ready }: { ready: boolean }) {
               className="flex-1 resize-none bg-white border border-line rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 max-h-32"
             />
             <button onClick={() => send(input)} disabled={sending || !input.trim()}
-              className="btn-primary h-[42px] px-4 disabled:opacity-50 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700">
+              className="btn-primary h-[42px] px-4 disabled:opacity-50 bg-gradient-to-r from-brand to-brand-light hover:from-brand-dark hover:to-brand">
               <IconSend className="h-4 w-4" />
             </button>
           </div>

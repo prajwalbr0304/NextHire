@@ -87,8 +87,8 @@ export default function Logs({ logs, running }: { logs: Log[]; running: boolean 
               <span className="text-slate-600 tabular-nums shrink-0">{l.ts}</span>
               <span className="shrink-0 text-[10px] font-bold px-1.5 rounded mt-[2px]"
                 style={{
-                  color: l.source === "backend" ? "#67e8f9" : "#c4b5fd",
-                  background: l.source === "backend" ? "rgba(103,232,249,.1)" : "rgba(196,181,253,.1)",
+                  color: l.source === "backend" ? "#67e8f9" : "#6ee7b7",
+                  background: l.source === "backend" ? "rgba(103,232,249,.1)" : "rgba(110,231,183,.1)",
                 }}>
                 {l.source === "backend" ? "BE" : "FE"}
               </span>

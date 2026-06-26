@@ -12,7 +12,7 @@ const LABEL: Record<string, string> = {
 };
 
 // Stripe-style segment palette (matches the donut weights icon)
-const PALETTE = ["#635bff", "#f59e0b", "#10b981", "#ec4899", "#06b6d4", "#8b5cf6"];
+const PALETTE = ["#10A37F", "#f59e0b", "#10b981", "#ec4899", "#06b6d4", "#3b82f6"];
 
 function tierOf(score: number) {
   if (score >= 85) return { label: "Tier 1 · Strong match", cls: "bg-emerald-50 text-emerald-700 border-emerald-200" };
@@ -24,7 +24,7 @@ function tierOf(score: number) {
 // Circular score gauge
 function ScoreRing({ value }: { value: number }) {
   const r = 34, c = 2 * Math.PI * r, pct = Math.max(0, Math.min(100, value));
-  const color = value >= 85 ? "#10b981" : value >= 70 ? "#635bff" : value >= 55 ? "#f59e0b" : "#94a3b8";
+  const color = value >= 85 ? "#10b981" : value >= 70 ? "#10A37F" : value >= 55 ? "#f59e0b" : "#94a3b8";
   return (
     <div className="relative h-[84px] w-[84px] shrink-0">
       <svg viewBox="0 0 84 84" className="h-full w-full -rotate-90">
@@ -107,7 +107,7 @@ function CandidateBody({ d, onClose }: { d: Detail; onClose: () => void }) {
   return (
     <div>
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-line px-7 py-5">
+      <div className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-line px-4 sm:px-7 py-5">
         <div className="flex items-start gap-4">
           <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-brand to-brand-light text-white grid place-items-center font-extrabold text-lg shadow-sm shrink-0">
             #{d.rank}
@@ -130,7 +130,7 @@ function CandidateBody({ d, onClose }: { d: Detail; onClose: () => void }) {
         </div>
 
         {/* Quick stat chips */}
-        <div className="grid grid-cols-4 gap-2 mt-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
           <StatChip label="Notice" value={d.notice_days === 0 ? "Immediate" : `${d.notice_days}d`} tone={d.notice_days <= 30 ? "good" : d.notice_days <= 60 ? "warn" : "bad"} />
           <StatChip label="Activity" value={d.active ? "Active" : "Dormant"} tone={d.active ? "good" : "warn"} />
           <StatChip label="Company" value={d.product ? "Product" : "Services"} tone={d.product ? "good" : "default"} />
@@ -138,7 +138,7 @@ function CandidateBody({ d, onClose }: { d: Detail; onClose: () => void }) {
         </div>
       </div>
 
-      <div className="p-7 space-y-5">
+      <div className="p-4 sm:p-7 space-y-5">
         {/* AI reasoning */}
         <div className="rounded-2xl bg-gradient-to-br from-brand-wash to-brand-wash/40 border border-brand/15 px-5 py-4">
           <div className="flex items-center gap-2 mb-1.5">

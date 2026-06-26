@@ -1,4 +1,5 @@
 "use client";
+import { IconMenu } from "./icons";
 
 const TAB_LABEL: Record<string, string> = {
   candidates: "Candidates", insights: "Insights",
@@ -22,18 +23,21 @@ const TAB_TAGLINE: Record<string, string> = {
 };
 
 export default function TopBar({
-  tabLabel,
+  tabLabel, onMenuClick,
 }: {
-  tabLabel: string;
+  tabLabel: string; onMenuClick?: () => void;
 }) {
   return (
-    <div className="h-20 sticky top-0 z-20 bg-canvas/80 backdrop-blur border-b border-line flex items-center justify-between px-7 pt-2">
-      <div className="flex flex-col justify-center">
+    <div className="h-20 sticky top-0 z-20 bg-canvas/80 backdrop-blur border-b border-line flex items-center justify-between px-4 sm:px-7 pt-2">
+      <div className="flex items-center gap-3 min-w-0">
+        <button onClick={onMenuClick} className="lg:hidden p-2 -ml-1 rounded-lg text-ink-soft hover:bg-gray-100 shrink-0" aria-label="Open navigation menu"><IconMenu className="h-5 w-5" /></button>
+        <div className="flex flex-col justify-center min-w-0">
         <span className="text-lg font-bold text-ink">{TAB_LABEL[tabLabel] ?? tabLabel}</span>
         <span className="text-xs text-ink-muted">{TAB_TAGLINE[tabLabel] ?? ""}</span>
       </div>
-      <div className="flex flex-col items-end leading-tight">
-        <span className="text-lg font-extrabold tracking-tight bg-gradient-to-r from-brand to-purple-600 bg-clip-text text-transparent">Nexthire</span>
+      </div>
+      <div className="flex flex-col items-end leading-tight shrink-0">
+        <span className="text-lg font-extrabold tracking-tight bg-gradient-to-r from-brand to-brand-light bg-clip-text text-transparent">Nexthire</span>
         <span className="text-[11px] text-ink-muted">Precision in every hire</span>
       </div>
     </div>
