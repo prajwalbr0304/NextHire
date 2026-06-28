@@ -1,22 +1,26 @@
 # Redrob Hackathon — Submission Metadata (Redrob Ranker v2.0)
+#
+# NOTE: fields marked TODO below must be filled from the portal at upload time
+# (contact PII, team members, and the deployed sandbox URL). Everything else is
+# real and matches the committed repo / measured run.
 
 team_name: "Council-of-Nine"
 
 primary_contact:
-  name: "Full Name"
-  email: "primary@example.com"
-  phone: "+91-XXXXXXXXXX"
+  name: "TODO: full name"            # TODO: portal — primary contact name
+  email: "TODO: primary@example.com"  # TODO: portal — primary contact email
+  phone: "TODO: +91-XXXXXXXXXX"       # TODO: portal — primary contact phone
 
 team_members:
-  - name: "Member 1 Full Name"
-    email: "member1@example.com"
+  - name: "TODO: Member 1 Full Name"  # TODO: portal — team member name
+    email: "TODO: member1@example.com" # TODO: portal — team member email
     role: "ML Engineer / Team Lead"
 
 # ============================================================================
 # Code and reproducibility
 # ============================================================================
-github_repo: "https://github.com/YOUR_USERNAME/redrob-ranker-v2"
-sandbox_link: "https://huggingface.co/spaces/YOUR_USERNAME/redrob-ranker"
+github_repo: "https://github.com/prajwalbr0304/AI-RECRUITING"
+sandbox_link: "TODO: deployed Streamlit/HF Spaces URL (see README § Hosted sandbox)"
 reproduce_command: "python rank.py --candidates ./candidates.jsonl --out ./submission.csv"
 
 # ============================================================================
@@ -26,12 +30,16 @@ compute:
   platform: "Local Windows box (Intel CPU)"
   cpu_cores: 8
   ram_gb: 16
-  python_version: "3.13"
-  os: "Windows 10/11"
-  uses_gpu_for_inference: false        # CPU only
-  has_network_during_ranking: false    # no API calls during ranking
-  pre_computation_required: false       # rank.py runs standalone in ~90s on 100K
-  pre_computation_time_minutes: 0
+  python_version: "3.13.9"
+  os: "Windows 11 Enterprise"
+  uses_gpu_for_inference: false        # CPU only — no GPU during ranking
+  has_network_during_ranking: false    # no API calls during ranking (HF offline forced)
+  # The one-time TF-IDF + LSA fit (~285s) is done OFFLINE and its result is
+  # committed as a ~1 MB frozen index in artifacts/. The ranking step loads it
+  # and finishes in ~25s; a from-scratch fallback (~5.9 min) exists but is not
+  # used when the committed index matches the released pool.
+  pre_computation_required: true
+  pre_computation_time_minutes: 5      # offline: python precompute.py --backend lsa --gzip
 
 # ============================================================================
 # AI tools declaration (transparency only — not penalised)
@@ -57,9 +65,11 @@ methodology_summary: |
   (anti keyword-stuffer). A conservative integrity layer floors logically
   impossible honeypots; a bounded behavioural-availability modifier separates
   engaged from dormant twins. Hybrid retrieval (TF-IDF lexical + LSA dense, RRF
-  fused) builds the shortlist; the LSA/lexical backend swaps cleanly for Nomic
-  Embed / SPLADE / Qwen3 per the blueprint. Reasoning is fact-grounded and
-  rank-calibrated. Runs CPU-only, offline, in ~90s on the full 100K pool.
+  fused) builds the shortlist offline and is committed as a ~1 MB frozen index so
+  the ranking step is CPU-only, offline, and deterministic. A neural cross-encoder
+  re-ranks the top-200 head with a deterministic feature fallback; a 3-band
+  relevance gate + tier calibration optimises NDCG@10/50, MAP and P@10. Reasoning
+  is fact-grounded and rank-calibrated. Runs in ~25s on the full 100K pool.
 
 # ============================================================================
 # Declarations

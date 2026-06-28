@@ -43,6 +43,7 @@ class Orchestrator:
         audit_path = compliance.write_audit(
             candidates_path, len(candidates), stats["n_honeypots"],
             time.time() - t0, fair, "lsa (sklearn TF-IDF + TruncatedSVD)",
+            honeypot_rules=stats.get("honeypot_rules"),
         )
         self._log(f"Compliance: audit written -> {audit_path}")
 

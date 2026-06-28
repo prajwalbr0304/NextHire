@@ -1,8 +1,8 @@
 "use client";
 import { useState } from "react";
-import { IconGrid, IconChart, IconShield, IconAlert, IconTarget, IconTerminal, IconChevron, IconBolt, IconUsers, IconBriefcase, IconClose } from "./icons";
+import { IconGrid, IconChart, IconShield, IconAlert, IconTarget, IconTerminal, IconChevron, IconUsers, IconBriefcase, IconClose } from "./icons";
 
-export type Tab = "candidates" | "insights" | "role" | "integrity" | "governance" | "compare" | "pipeline" | "nextai" | "audit" | "settings";
+export type Tab = "candidates" | "insights" | "role" | "integrity" | "governance" | "compare" | "pipeline" | "audit" | "settings";
 
 const items: { id: Tab; label: string; icon: (p: { className?: string }) => JSX.Element; badge?: number }[] = [
   { id: "candidates", label: "Candidates", icon: IconGrid },
@@ -12,7 +12,6 @@ const items: { id: Tab; label: string; icon: (p: { className?: string }) => JSX.
   { id: "governance", label: "Governance", icon: IconShield },
   { id: "compare", label: "Compare", icon: IconUsers },
   { id: "pipeline", label: "Pipeline", icon: IconBriefcase },
-  { id: "nextai", label: "NextAi", icon: IconBolt },
   { id: "audit", label: "Audit", icon: IconTerminal },
 ];
 

@@ -31,6 +31,29 @@
     "increased", "reduced latency", "at scale", "million", "throughput"
   ],
 
+  "_evidence_comment": "Evidence Scout uses DOMAIN-ANCHORED evidence: a delivery verb only counts when it co-occurs with an ML/system domain noun, so generic management language ('led teams', 'owned delivery') no longer inflates non-engineers. evidence_phrases is kept for backward compatibility.",
+
+  "evidence_verbs": [
+    "built", "build", "building", "shipped", "ship", "deployed", "deploy",
+    "designed", "architected", "developed", "engineered", "led", "owned", "scaled",
+    "served", "launched", "implemented", "optimized", "optimised", "trained",
+    "fine-tuned", "improved", "increased", "reduced", "drove", "delivered"
+  ],
+
+  "evidence_domain": [
+    "recommendation system", "recommender system", "recommendation engine",
+    "search system", "ranking system", "retrieval system", "matching system",
+    "search engine", "recommendation", "recommender", "recsys", "ranking",
+    "learning to rank", "retrieval", "embedding", "embeddings", "vector search",
+    "vector database", "semantic search", "information retrieval", "nlp",
+    "natural language processing", "llm", "transformer", "rag", "ml pipeline",
+    "data pipeline", "feature engineering", "machine learning", "deep learning",
+    "neural network", "fine-tuning", "inference", "ml model", "personalization",
+    "a/b testing", "ab testing", "ndcg", "classifier", "clustering",
+    "computer vision", "speech recognition", "reduced latency", "throughput",
+    "at scale", "in production", "production system", "real users", "million users"
+  ],
+
   "positive_titles": [
     "ai engineer", "ml engineer", "machine learning engineer", "data scientist",
     "research engineer", "software engineer", "backend engineer", "search engineer",
@@ -72,6 +95,56 @@
     "nlp", "information retrieval", "retrieval", "embeddings", "search",
     "ranking", "recommendation", "transformers", "bert", "llm",
     "fine-tuning", "rag", "semantic", "milvus", "faiss", "vector"
+  ],
+
+  "_disqualifier_comment": "Vocabularies for the JD's explicit 'we will not move forward' gates. Each gate in council.disqualifier_screen requires MULTIPLE of these to fire, so a single keyword never sinks a candidate.",
+
+  "research_industries": [
+    "research", "academia", "academic", "higher education", "scientific research"
+  ],
+
+  "research_titles": [
+    "research scientist", "research fellow", "research associate", "research assistant",
+    "postdoctoral", "postdoc", "phd researcher", "phd candidate", "professor",
+    "assistant professor", "associate professor", "lecturer", "academic"
+  ],
+
+  "research_company_markers": [
+    "university", "institute", "indian institute", "iisc", "research lab",
+    "laboratory", "academia", "college", "csir", "drdo", "isro", "max planck",
+    "national lab"
+  ],
+
+  "wrapper_skills": [
+    "langchain", "llama index", "llamaindex", "openai api", "prompt engineering",
+    "autogen", "crewai", "semantic kernel", "haystack", "gpt wrapper", "chatgpt"
+  ],
+
+  "core_ml_skills": [
+    "machine learning", "deep learning", "information retrieval", "ranking",
+    "learning to rank", "recommendation", "recommender", "nlp",
+    "natural language processing", "pytorch", "tensorflow", "scikit-learn",
+    "scikit learn", "xgboost", "embeddings", "search", "neural network",
+    "computer vision", "transformers", "bert"
+  ],
+
+  "leadership_titles": [
+    "engineering manager", "architect", "solution architect", "technical architect",
+    "director", "vp", "vice president", "head of", "cto", "chief", "delivery manager",
+    "program manager", "practice head", "associate director", "senior manager"
+  ],
+
+  "eval_skills": [
+    "ndcg", "mrr", "map", "mean average precision", "a/b testing", "ab testing",
+    "a/b test", "offline evaluation", "online evaluation", "experimentation",
+    "evaluation framework", "precision", "recall", "auc", "offline-to-online",
+    "recall@k", "precision@k"
+  ],
+
+  "external_validation_markers": [
+    "open source", "open-source", "github", "paper", "publication", "published",
+    "patent", "talk", "conference", "keynote", "speaker", "kaggle", "blog", "oss",
+    "neurips", "acl", "emnlp", "kdd", "sigir", "icml", "cvpr"
   ],
 
   "preferred_locations": [

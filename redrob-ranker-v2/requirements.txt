@@ -1,28 +1,35 @@
-# Redrob Ranker v2.0 — core runtime dependencies (CPU-only, offline at rank time)
-# Pinned to the versions validated on the development machine (Python 3.13).
-numpy>=1.26,<3
-scipy>=1.11
-scikit-learn>=1.4
-orjson>=3.9
-PyYAML>=6.0
-pandas>=2.0
-openpyxl>=3.1
+# Redrob Ranker v2.0 — pinned runtime dependencies (CPU-only, offline at rank time).
+# EXACT versions validated on the dev machine (Python 3.13) and used to BUILD the
+# committed index, so the Stage-3 Docker reproduces the ranking bit-for-bit.
+# rank.py itself needs only numpy / scipy / scikit-learn / orjson / PyYAML.
+numpy==2.5.0
+scipy==1.17.1
+scikit-learn==1.9.0
+orjson==3.11.9
+PyYAML==6.0.3
+pandas==2.3.3
+openpyxl==3.1.5
 
-# --- API backend (FastAPI) for the Next.js frontend (web/) ---
-fastapi>=0.115
-uvicorn>=0.30
-python-multipart>=0.0.9
+# --- Hosted sandbox demo (app.py) — REQUIRED for the §10.5 sandbox link / Streamlit Cloud ---
+streamlit==1.57.0
 
-# --- Optional upgrades from the blueprint (NOT required to run rank.py) ---
-# Uncomment to enable the heavier 2026 backends described in the blueprint.
-# These run only during the OFFLINE precompute step (network allowed there).
+# --- Optional FastAPI backend for the Next.js frontend (web/); not needed for rank.py ---
+fastapi==0.138.0
+uvicorn==0.32.1
+python-multipart==0.0.22
+
+# --- Semantic embeddings backend (RECOMMENDED, default-on with LSA fallback) ---
+# The dense "Semantic Seer" signal uses sentence-transformers when available and
+# transparently falls back to the always-installed LSA backend otherwise, so the
+# pipeline runs with or without these. Install the heavier deps via:
+#     pip install -r requirements-embeddings.txt
+# Encode the pool once (offline, network allowed) before ranking:
+#     REDROB_EMBED_BACKEND=st python precompute.py --candidates candidates.jsonl
 #
-# sentence-transformers>=3.0      # Nomic Embed v1.5 / BGE / E5 dense backend
+# --- Other optional upgrades from the blueprint (NOT required to run rank.py) ---
 # transformers>=4.44              # Qwen3-Reranker neural re-ranking
 # onnxruntime>=1.18               # INT8-quantized CPU inference (2-3x speedup)
 # xgboost>=2.1                    # LambdaMART learning-to-rank fusion
 # faiss-cpu>=1.8                  # approximate nearest-neighbour index
 # polars>=1.0                     # faster feature engineering at scale
-#
-# --- Demo / sandbox only ---
-# streamlit>=1.30                 # hosted sandbox demo (app.py)
+# (streamlit is pinned above — it powers the hosted sandbox in app.py.)

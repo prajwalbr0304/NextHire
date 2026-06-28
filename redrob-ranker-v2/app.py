@@ -8,12 +8,14 @@ Features
 * Upload a candidate pool of ANY size (the .streamlit/config.toml lifts the cap).
 * Ranks the ENTIRE uploaded pool (not just 100), best -> least.
 * Results shown 100 per page, each candidate in an expandable card.
-* Export the ranked list (choose how many) to an Excel (.xlsx) file.
+* Download a spec-compliant submission CSV (candidate_id,rank,score,reasoning)
+  or export the full ranked list (choose how many) to an Excel (.xlsx) file.
 
     streamlit run app.py
 """
 from __future__ import annotations
 
+import csv
 import io
 import json
 import math
@@ -259,6 +261,25 @@ def to_excel_bytes(df, role_name):
     return buf.getvalue()
 
 
+def to_submission_csv_bytes(ranked, jd, n):
+    """Spec CSV (candidate_id,rank,score,reasoning) for the top-`n`.
+
+    Guarantees the official validator passes: scores are rounded to 4 dp and the
+    rows are then ordered by (-score, candidate_id), so score is non-increasing by
+    rank and any equal scores are broken by candidate_id ascending.
+    """
+    items = [(round(float(score), 4), c, f, dec, integ)
+             for (score, c, f, dec, integ) in ranked[:n]]
+    items.sort(key=lambda r: (-r[0], (r[1].get("candidate_id") or "")))
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["candidate_id", "rank", "score", "reasoning"])
+    for rank, (rscore, c, f, dec, integ) in enumerate(items, 1):
+        reasoning = gen_reason(c, f, dec, integ, rscore, rank, jd)
+        w.writerow([c.get("candidate_id"), rank, f"{rscore:.4f}", reasoning])
+    return buf.getvalue().encode("utf-8")
+
+
 # ---------------------------------------------------------------------------
 # File loading
 # ---------------------------------------------------------------------------
@@ -340,16 +361,21 @@ if raw_bytes:
 
     # ---- export bar ----
     with st.container(border=True):
-        ex1, ex2, ex3 = st.columns([2, 2, 1])
+        csv_n = int(min(100, n_ranked))
+        st.download_button(
+            f"⬇️ Download submission CSV (top {csv_n})",
+            data=to_submission_csv_bytes(ranked, jd, csv_n),
+            file_name="submission.csv", mime="text/csv",
+            use_container_width=True,
+            help="Spec format candidate_id,rank,score,reasoning — passes validate_submission.py")
+        ex1, ex3 = st.columns([3, 1])
         with ex1:
             export_n = st.number_input(
-                "Number of candidates to export", min_value=1,
+                "Rows for the detailed Excel export (scores, verified skills, "
+                "Council sub-scores, reasoning)", min_value=1,
                 max_value=int(n_ranked), value=int(min(100, n_ranked)), step=10)
-        with ex2:
-            st.write("")
-            st.caption("Builds an Excel (.xlsx) with ranks, scores, verified skills, "
-                       "Council sub-scores and reasoning.")
         with ex3:
+            st.write("")
             st.write("")
             if st.button("📊 Generate Excel", use_container_width=True):
                 df = build_export_df(ranked, jd, int(export_n))

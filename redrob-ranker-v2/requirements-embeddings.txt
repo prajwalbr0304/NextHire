@@ -1,0 +1,22 @@
+# Optional neural backends — semantic embeddings AND the cross-encoder re-ranker.
+#
+# Install on top of requirements.txt to enable BOTH:
+#   * dense bi-encoder embeddings for the "Semantic Seer" signal
+#     (default: BAAI/bge-small-en-v1.5, 384-dim, CPU)
+#   * the Stage-[3b] cross-encoder re-ranker on the top-N head
+#     (default: cross-encoder/ms-marco-MiniLM-L-6-v2, CPU) for sharper NDCG@10
+# Both use the SAME two packages below. WITHOUT them the pipeline transparently
+# falls back (LSA dense + deterministic feature re-rank) — nothing breaks.
+#
+#     pip install -r requirements.txt -r requirements-embeddings.txt
+#
+# These are used only during the OFFLINE precompute step (network allowed):
+#     REDROB_EMBED_BACKEND=st python precompute.py --candidates candidates.jsonl
+# The rank.py step then loads the cached vectors and stays CPU-only / offline /
+# well under the 5-minute budget.
+
+sentence-transformers>=3.0
+# CPU build of torch (the sentence-transformers backend). On most platforms the
+# default `pip install torch` resolves a CPU wheel; if you need an explicit CPU
+# index use: pip install torch --index-url https://download.pytorch.org/whl/cpu
+torch>=2.2

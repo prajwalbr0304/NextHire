@@ -12,7 +12,6 @@ import InsightsView from "@/components/InsightsView";
 import GovernanceView from "@/components/GovernanceView";
 import CompareView from "@/components/CompareView";
 import PipelineView from "@/components/PipelineView";
-import NextAiView from "@/components/NextAiView";
 import RoleView from "@/components/RoleView";
 import IntegrityView from "@/components/IntegrityView";
 import { api } from "@/lib/api";
@@ -28,8 +27,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "candidates", label: "Candidates" }, { id: "insights", label: "Insights" },
   { id: "role", label: "Role" }, { id: "integrity", label: "Integrity" },
   { id: "governance", label: "Governance" }, { id: "compare", label: "Compare" },
-  { id: "pipeline", label: "Pipeline" }, { id: "nextai", label: "NextAi" },
-  { id: "audit", label: "Audit" }, { id: "settings", label: "Settings" },
+  { id: "pipeline", label: "Pipeline" },   { id: "audit", label: "Audit" }, { id: "settings", label: "Settings" },
 ];
 
 function nowTs() {
@@ -660,7 +658,6 @@ export default function Page() {
           ) : (
             <div>
               {tab === "pipeline" ? <PipelineView />
-                : tab === "nextai" ? <NextAiView ready={ready} />
                 : tab === "compare" ? <CompareView ids={compareIds} setIds={setCompareIds} ready={ready} cols={4} />
                 : !ready ? (tab === "candidates" ? <LeaderboardEmptyHeader /> : <Empty />)
                 : tab === "candidates" ? (filteredLb ? <Leaderboard data={filteredLb} page={page} setPage={setPage} onSelect={setSelId} compareIds={compareIds} onToggleCompare={toggleCompare} shortlists={shortlists} onAddToShortlist={taskId ? addToShortlist : undefined} onCreateShortlist={taskId ? createShortlist : undefined} /> : <Empty />)

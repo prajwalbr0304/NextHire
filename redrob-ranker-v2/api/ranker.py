@@ -31,7 +31,7 @@ import src.config as config                                   # noqa: E402
 from src.features import build_document, compute_features      # noqa: E402
 from src.reasoning import generate as gen_reason               # noqa: E402
 from src.retrieve import build_retriever                       # noqa: E402
-from src.score import _soft_nudge                              # noqa: E402
+from src.score import _soft_nudge, finalize_ranking           # noqa: E402
 from src.skills_verify import verified_relevant_skills         # noqa: E402
 from src.load import load_candidates                           # noqa: E402
 from api import supabase_store                                 # noqa: E402
@@ -170,6 +170,7 @@ def _do_rank(file_path: str, role_name: str, weights: dict, params: dict):
             config.NOTICE_PREF_DAYS = int(params["notice_pref"])
         enable_integrity = params.get("integrity", True)
         enable_avail = params.get("availability", True)
+        enable_disq = params.get("disqualifiers", True)
         log("info", f"Params → ideal YOE {config.EXP_IDEAL_LOW:.0f}-{config.EXP_IDEAL_HIGH:.0f}, "
                     f"acceptable {config.EXP_OK_LOW:.0f}-{config.EXP_OK_HIGH:.0f}, "
                     f"notice ≤ {config.NOTICE_PREF_DAYS}d, "
@@ -207,22 +208,22 @@ def _do_rank(file_path: str, role_name: str, weights: dict, params: dict):
             dec = council.deliberate(f, (dense[i] - lo) / rng)
             im = integ[0] if enable_integrity else 1.0
             am = dec["avail_mult"] if enable_avail else 1.0
-            fit = dec["core"] * im * dec["neg_mult"] * am + _soft_nudge(f)
+            dq = dec["disqualifier_mult"] if enable_disq else 1.0
+            fit = dec["core"] * im * dec["neg_mult"] * dq * am + _soft_nudge(f)
             rows.append([max(0.0, fit), c, f, dec, integ])
         if enable_integrity:
             log("warn", f"Integrity Warden excluded {len(honeypots)} impossible honeypot profiles")
         log("success", f"Scored {len(rows):,} candidates in {time.time()-t:.1f}s")
 
-        log("info", "Calibrating composite scores and ordering the leaderboard…")
-        rows.sort(key=lambda r: (-r[0], r[1].get("candidate_id") or ""))
-        raws = np.array([r[0] for r in rows], dtype=float)
-        if len(raws) > 1 and raws.max() > raws.min():
-            cal = 0.35 + 0.64 * (raws - raws.min()) / (raws.max() - raws.min())
-        else:
-            cal = np.full(len(raws), 0.8)
-        for r, s in zip(rows, cal):
-            r[0] = float(s)
-        rows.sort(key=lambda r: (-r[0], r[1].get("candidate_id") or ""))
+        log("info", "Re-ranking the head and applying 3-band tier calibration…")
+        # Reuse the EXACT submission-path final stage (two-stage re-rank + 3-band
+        # tier calibration) so the dashboard ordering matches rank.py exactly.
+        _scored = [{"raw": r[0], "candidate": r[1], "f": r[2], "dec": r[3],
+                    "integ": r[4], "candidate_id": r[1].get("candidate_id") or ""}
+                   for r in rows]
+        _ranked = finalize_ranking(_scored, jd, top_n=None, verbose=False)
+        rows = [[rr["score"], rr["candidate"], rr["f"], rr["dec"], rr["integ"]]
+                for rr in _ranked]
 
         runtime = round(time.time() - t_run, 1)
         with _lock:
@@ -765,11 +766,14 @@ def compliance() -> dict:
                         f"{len(flags)} potential bias signal(s) flagged for human review."),
         },
         "scoring": {
-            "formula": "composite = ( Σ councilₖ · weightₖ ) × integrity × negative_screen × availability + soft_nudge",
+            "formula": "composite = ( Σ councilₖ · weightₖ ) × integrity × negative_screen "
+                       "× disqualifier_screen × availability + bonuses",
             "explanation": "Six additive sub-scorers are fused by your weights to form a core fit, "
-                           "then three multiplicative gates (Integrity Warden, Neti-Neti negative "
-                           "screen, Availability Oracle) adjust it. Scores are finally calibrated to a "
-                           "0–100 scale. Every weight is inspectable and user-tunable.",
+                           "then multiplicative gates (Integrity Warden, Neti-Neti negative screen, "
+                           "the JD Disqualifier Screen, and the Availability Oracle) adjust it. "
+                           "Bounded additive bonuses reward JD nice-to-have skills and evaluation "
+                           "rigor without ever dominating the core. Scores are finally calibrated to "
+                           "a 0–100 scale. Every weight and threshold is inspectable and user-tunable.",
             "weights": weights_pct,
             "council": [{"key": k, "label": COUNCIL_LABELS[k],
                          "description": COUNCIL_DESC[k],
@@ -782,9 +786,15 @@ def compliance() -> dict:
                            "soft inconsistencies lower the integrity multiplier."},
                 {"name": "Neti-Neti Gatekeeper", "type": f"multiplier ≥ {config.NEGSCREEN_MIN}",
                  "detail": "Penalises services-only careers, off-domain specialisation without NLP/IR, "
-                           "and keyword-stuffer signatures."},
+                           "and keyword-stuffer signatures (including off-list fake titles)."},
+                {"name": "JD Disqualifier Screen", "type": f"multiplier ≥ {config.DISQUAL_MULT_FLOOR}",
+                 "detail": "Applies the JD's explicit 'we will not move forward' gates — pure "
+                           "research/no production, recent LLM-wrapper-only, leadership/no-code drift, "
+                           "and 5y+ closed-source with no external validation — each requiring "
+                           "multiple corroborating signals."},
                 {"name": "Availability Oracle", "type": f"multiplier {config.AVAIL_MIN}–{config.AVAIL_MAX}",
-                 "detail": "Bounded behavioural modifier from recency, responsiveness and open-to-work."},
+                 "detail": "Bounded behavioural modifier from recency, responsiveness, offer history "
+                           "and engagement; a hard ghost-gate demotes dormant + unresponsive profiles."},
             ],
         },
         "audit": {

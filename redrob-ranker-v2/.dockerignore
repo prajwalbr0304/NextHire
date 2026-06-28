@@ -1,0 +1,27 @@
+# Keep the ranking-reproduction image lean and deterministic.
+.git
+.gitignore
+**/__pycache__
+*.pyc
+.pytest_cache
+.venv
+venv
+.streamlit
+
+# Organiser data is mounted at run time, never baked into the image.
+*.jsonl
+candidates.jsonl
+candidates.jsonl.gz
+
+# Next.js frontend is not part of the ranking step.
+web/
+
+# Heavy docs / logs / prior outputs not needed to reproduce the CSV.
+*.pdf
+ui_explained.html
+screenshots/
+_api.out.log
+_api.err.log
+submission*.csv
+ranked_output.csv
+package-lock.json

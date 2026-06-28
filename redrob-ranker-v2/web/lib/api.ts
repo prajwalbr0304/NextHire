@@ -1,6 +1,6 @@
 import type {
   Analytics, Compliance, Detail, Honeypots, JobIntent, Leaderboard, Log, Status, Summary,
-  TaskSummary, TaskCandidate, Shortlist, ShortlistMember, NextAiStatus, ChatMessage,
+  TaskSummary, TaskCandidate, Shortlist, ShortlistMember,
 } from "./types";
 
 async function get<T>(url: string): Promise<T> {
@@ -60,11 +60,6 @@ export const api = {
     post<ShortlistMember>(`/api/shortlists/${shortlistId}/members`, member),
   removeMember: (memberId: number) => del<{ ok: boolean }>(`/api/shortlist-members/${memberId}`),
 
-  // --- NextAI assistant ---
-  nextaiStatus: () => get<NextAiStatus>("/api/nextai/status"),
-  nextaiChat: (question: string, history: ChatMessage[]) =>
-    post<{ answer: string; provider: string; model: string; configured: boolean }>(
-      "/api/nextai/chat", { question, history }),
   stage: async (file: File) => {
     const fd = new FormData();
     fd.append("file", file);

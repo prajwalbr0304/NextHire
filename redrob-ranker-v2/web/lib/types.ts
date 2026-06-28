@@ -121,9 +121,6 @@ export type Shortlist = {
   members: ShortlistMember[]; count: number;
 };
 
-export type ChatMessage = { role: "user" | "assistant"; content: string };
-export type NextAiStatus = { configured: boolean; provider: string; model: string };
-
 export type HoneypotItem = {
   candidate_id: string; title: string; company?: string;
   violation_key: string; violation_type: string;

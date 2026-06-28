@@ -27,6 +27,15 @@ _SHARED = {
     "services_companies": BASE["services_companies"],
     "preferred_locations": BASE["preferred_locations"],
     "company": "Redrob (configurable employer)",
+    # disqualifier vocabularies (inherited so every role gets the same gates)
+    "research_industries": BASE["research_industries"],
+    "research_titles": BASE["research_titles"],
+    "research_company_markers": BASE["research_company_markers"],
+    "wrapper_skills": BASE["wrapper_skills"],
+    "core_ml_skills": BASE["core_ml_skills"],
+    "leadership_titles": BASE["leadership_titles"],
+    "eval_skills": BASE["eval_skills"],
+    "external_validation_markers": BASE["external_validation_markers"],
 }
 
 
