@@ -812,6 +812,23 @@ def compliance() -> dict:
     }
 
 
+def _tech_age_skill(skills: list):
+    """The worst skill used for longer than its technology has existed — mirrors
+    the HARD-4 rule in src/integrity.py so the dashboard compares the claim
+    against the TECHNOLOGY's first year, not the candidate's career length.
+    Returns (name, duration_months, implied_start_year, tech_first_year) or None."""
+    margin = config.HONEYPOT_TECH_AGE_MARGIN_YEARS
+    worst = None
+    for s in skills:
+        dur = float(s.get("duration_months") or 0)
+        first = integrity.TECH_FIRST_YEAR.get((s.get("name") or "").strip().lower())
+        if first and dur > 0:
+            implied_start = integrity.REFERENCE_DATE.year - dur / 12.0
+            if implied_start < first - margin and (worst is None or dur > worst[1]):
+                worst = (s.get("name") or "—", dur, implied_start, first)
+    return worst
+
+
 def _classify_honeypot(c: dict, integ) -> dict:
     """Turn an integrity flag into a structured violation record for the
     Integrity dashboard — grounded in the candidate's own declared data."""
@@ -821,8 +838,15 @@ def _classify_honeypot(c: dict, integ) -> dict:
     yoe = float(p.get("years_of_experience") or 0.0)
     career_months = int(round(yoe * 12))
     reasons = list(integ[2]) if integ and len(integ) > 2 else []
+    reason_blob = " ".join(reasons).lower()
     is_hard = bool(integ[1]) if integ and len(integ) > 1 else False
     cap = yoe * 12 + 36
+
+    # A skill used for more years than its technology has existed (the most
+    # common honeypot). Detected from the Warden's own reason so we never relabel
+    # a profile flagged by a different rule. Compared against the TECHNOLOGY's
+    # first year — NOT career length.
+    tech_skill = _tech_age_skill(skills) if "technology only existed" in reason_blob else None
 
     worst_skill = None
     for s in skills:
@@ -853,7 +877,20 @@ def _classify_honeypot(c: dict, integ) -> dict:
         "severity": "high" if is_hard else "medium",
         "reasons": reasons,
     }
-    if worst_skill:
+    if tech_skill:
+        name, dur, implied_start, first = tech_skill
+        start_year = int(round(implied_start))
+        years_early = first - start_year
+        rec.update({
+            "violation_key": "tech_age",
+            "violation_type": "Skill older than its technology",
+            "flagged_skill": name,
+            "claimed_label": "Claimed use", "claimed_value": f"{int(dur)} mo (since ~{start_year})",
+            "baseline_label": "Tech exists since", "baseline_value": f"~{first}",
+            "delta": (f"{years_early}y too early" if years_early > 0 else None),
+            "severity": "critical",
+        })
+    elif worst_skill:
         claimed = int(worst_skill[1])
         rec.update({
             "violation_key": "skill_duration",

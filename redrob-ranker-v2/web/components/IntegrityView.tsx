@@ -210,7 +210,7 @@ export default function IntegrityView({ h, onLog }: { h: Honeypots | null; onLog
               <div>Last known title</div>
               <div>Violation type</div>
               <div>Flagged skill</div>
-              <div>Claimed vs career length</div>
+              <div>Claimed vs baseline</div>
               <div className="text-center">Severity</div>
               <div className="text-center">Action</div>
             </div>
