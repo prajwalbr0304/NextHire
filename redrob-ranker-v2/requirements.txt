@@ -10,10 +10,7 @@ PyYAML==6.0.3
 pandas==2.3.3
 openpyxl==3.1.5
 
-# --- Hosted sandbox demo (app.py) — REQUIRED for the §10.5 sandbox link / Streamlit Cloud ---
-streamlit==1.57.0
-
-# --- Optional FastAPI backend for the Next.js frontend (web/); not needed for rank.py ---
+# --- FastAPI backend powering the Next.js frontend (web/) and the HuggingFace Space ---
 fastapi==0.138.0
 uvicorn==0.32.1
 python-multipart==0.0.22
@@ -32,4 +29,3 @@ python-multipart==0.0.22
 # xgboost>=2.1                    # LambdaMART learning-to-rank fusion
 # faiss-cpu>=1.8                  # approximate nearest-neighbour index
 # polars>=1.0                     # faster feature engineering at scale
-# (streamlit is pinned above — it powers the hosted sandbox in app.py.)

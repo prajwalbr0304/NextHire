@@ -16,7 +16,7 @@ web/.next
 web/out
 web_out
 
-# Large organiser data is never baked in (the small *.json sample IS kept)
+# Large organiser data is never baked into the image
 *.jsonl
 candidates.jsonl
 candidates.jsonl.gz
