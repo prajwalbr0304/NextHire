@@ -43,11 +43,11 @@ def iter_candidates(path: str) -> Iterator[dict]:
                 continue
             except Exception:
                 pass
-            # Recover a line with stray junk wrapped around the JSON object rather
-            # than silently dropping a real candidate. The contest pool ships with
-            # line 1 prefixed by a literal "CLEAR" before the '{' (CAND_0000001),
-            # which a strict json.loads rejects. Re-parse the substring spanning
-            # the first '{' to the last '}'.
+            # Recover a line with stray text wrapped around the JSON object rather
+            # than silently dropping a real candidate. (An earlier revision of the
+            # pool shipped one record prefixed with junk before the '{', which a
+            # strict json.loads rejects.) Re-parse the substring spanning the first
+            # '{' to the last '}'; if that still fails the line is skipped below.
             a, b = line.find("{"), line.rfind("}")
             if a != -1 and b > a:
                 try:
