@@ -176,8 +176,18 @@ def score_pool(candidates: List[dict], jd: dict, retriever, verbose=True):
         print(f"[TIMING] retrieve+shortlist: {time.time()-t:.2f}s", flush=True)
         print(f"  [retrieve] shortlist = {len(shortlist)} candidates", flush=True)
 
-    # normalise semantic similarity to [0,1] across the shortlist
-    sl_sims = dense_sim[shortlist]
+    # Which candidates get the full Council scoring. By default we score the ENTIRE
+    # pool so no qualified candidate is ever dropped by the recall stage (the JD's
+    # explicit ask: a buzzword-light "Tier-5" who actually shipped a system must
+    # still be reachable). Retrieval still supplies the per-candidate semantic
+    # signal (dense_sim) used by the Semantic Seer below.
+    score_idx = list(range(n)) if config.SCORE_FULL_POOL else shortlist
+    if verbose:
+        scope = "FULL POOL" if config.SCORE_FULL_POOL else "shortlist"
+        print(f"  [score] scoring {len(score_idx):,} candidates ({scope})", flush=True)
+
+    # normalise semantic similarity to [0,1] across the scored set
+    sl_sims = dense_sim[score_idx]
     lo, hi = float(sl_sims.min()), float(sl_sims.max())
     rng = (hi - lo) or 1.0
 
@@ -185,7 +195,7 @@ def score_pool(candidates: List[dict], jd: dict, retriever, verbose=True):
     scored = []
     n_honeypots = 0
     honeypot_rules: Counter = Counter()
-    for idx in shortlist:
+    for idx in score_idx:
         c = candidates[idx]
         f = compute_features(c, jd)
         sem = (dense_sim[idx] - lo) / rng
@@ -230,10 +240,11 @@ def score_pool(candidates: List[dict], jd: dict, retriever, verbose=True):
         print(f"[TIMING] reasoning: {time.time()-t:.2f}s", flush=True)
 
     stats = {
-        "n_scored": len(scored),
-        "n_honeypots": n_honeypots,                 # flagged within the shortlist (excluded)
+        "n_scored": len(scored),                    # survived honeypot exclusion
+        "n_considered": len(score_idx),             # candidates put through scoring
+        "n_honeypots": n_honeypots,                 # flagged across the scored set (excluded)
         "honeypot_rules": dict(honeypot_rules),     # per-rule breakdown of those flags
-        "shortlist_size": len(shortlist),
+        "shortlist_size": len(shortlist),           # RRF recall shortlist (informational)
         "selected_idx": [r["idx"] for r in top],
     }
     return records, stats

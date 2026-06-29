@@ -21,8 +21,16 @@ JD_INTENT_PATH = os.path.join(HERE, "jd_intent.json")
 # ----------------------------------------------------------------------------
 # Retrieval
 # ----------------------------------------------------------------------------
-SHORTLIST_SIZE = 4000        # candidates kept after hybrid retrieval
+SHORTLIST_SIZE = 4000        # candidates kept after hybrid retrieval (recall stage)
 RERANK_SIZE = 200            # head size re-scored by the two-stage re-ranker
+
+# Score the ENTIRE candidate pool with the Council of Nine, not just the RRF
+# retrieval shortlist. The JD explicitly wants candidates whose profiles lack the
+# surface buzzwords (a "Tier-5" who shipped a recsys at a product company) to
+# still be considered, so the recall stage must never decide who gets scored.
+# Retrieval still supplies each candidate's semantic-similarity signal; it just
+# no longer gates scoring. Set False to restore the faster shortlist-only path.
+SCORE_FULL_POOL = True
 DENSE_DIM = 256              # LSA / Matryoshka dimension for the "dense" signal
 TFIDF_MAX_FEATURES = 50000
 TFIDF_NGRAM = (1, 2)         # uni+bigrams capture "vector search", "recsys" (capped by max_features)
@@ -76,12 +84,12 @@ RERANK_TIME_BUDGET_S = float(os.environ.get("REDROB_RERANK_TIME_BUDGET_S", "120"
 # the self-declared skills list is deliberately down-weighted (anti-stuffer).
 # ----------------------------------------------------------------------------
 COUNCIL_WEIGHTS = {
-    "semantic_seer":   0.16,   # dense/semantic JD<->profile similarity
+    "semantic_seer":   0.13,   # dense/semantic JD<->profile similarity (recall; JD warns surface match is a trap)
     "name_rectifier":  0.20,   # title must match reality (Zhengming)
-    "evidence_scout":  0.22,   # demonstrated "built/shipped a system" evidence
+    "evidence_scout":  0.24,   # demonstrated "built/shipped a system" evidence (JD's dominant signal)
     "mask_piercer":    0.14,   # verified skill-trust (anti keyword-stuffer)
     "path_reader":     0.12,   # experience band + tenure stability
-    "terrain_master":  0.16,   # product-vs-services + domain proximity
+    "terrain_master":  0.17,   # product-vs-services + domain proximity
 }
 # scorers 7 (neti_neti), 8 (integrity), 9 (availability) act as
 # gates / multipliers, not additive weights (see score.py).

@@ -164,7 +164,8 @@ def main():
     if verbose:
         print("-" * 64)
         print(f"[done] wrote {len(records)} rows -> {args.out}")
-        print(f"       honeypots detected & excluded (from shortlist): {stats['n_honeypots']}")
+        print(f"       candidates scored: {stats.get('n_considered', stats['n_scored']):,}")
+        print(f"       honeypots detected & excluded: {stats['n_honeypots']}")
         if stats.get("honeypot_rules"):
             by_rule = ", ".join(f"{k}={v}" for k, v in sorted(stats["honeypot_rules"].items()))
             print(f"         by rule: {by_rule}")

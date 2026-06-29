@@ -36,8 +36,8 @@ function nowTs() {
 }
 
 const DEFAULT_W: Weights = {
-  semantic_seer: 0.16, name_rectifier: 0.20, evidence_scout: 0.22,
-  mask_piercer: 0.14, path_reader: 0.12, terrain_master: 0.16,
+  semantic_seer: 0.13, name_rectifier: 0.20, evidence_scout: 0.24,
+  mask_piercer: 0.14, path_reader: 0.12, terrain_master: 0.17,
 };
 const DEFAULT_P: Params = {
   yoe_ideal: [6, 8], yoe_ok: [5, 9], notice_pref: 30, integrity: true, availability: true,

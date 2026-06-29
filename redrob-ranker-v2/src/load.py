@@ -40,9 +40,23 @@ def iter_candidates(path: str) -> Iterator[dict]:
                 continue
             try:
                 yield _loads(line)
-            except Exception:
-                # be robust to a stray malformed line rather than crash a 5-min run
                 continue
+            except Exception:
+                pass
+            # Recover a line with stray junk wrapped around the JSON object rather
+            # than silently dropping a real candidate. The contest pool ships with
+            # line 1 prefixed by a literal "CLEAR" before the '{' (CAND_0000001),
+            # which a strict json.loads rejects. Re-parse the substring spanning
+            # the first '{' to the last '}'.
+            a, b = line.find("{"), line.rfind("}")
+            if a != -1 and b > a:
+                try:
+                    yield _loads(line[a:b + 1])
+                    continue
+                except Exception:
+                    pass
+            # genuinely unparseable -> skip rather than crash a long run
+            continue
 
 
 def _looks_like_json_array(path: str) -> bool:
