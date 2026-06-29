@@ -121,7 +121,7 @@ are calibrated into presentable, strictly non-increasing values.
 
 ## 2. What Was Built
 
-### 2.1 The ranking engine (`NextHire/src/`)
+### 2.1 The ranking engine (`src/`)
 
 | Module | Stage | What it does | In → Out |
 |---|---|---|---|
@@ -141,7 +141,7 @@ are calibrated into presentable, strictly non-increasing values.
 | `roles.py` | — | A catalogue of 6 role "intent profiles" (the base Senior AI/ML Engineer JD plus Backend, Data Scientist, Frontend, DevOps, Product) sharing the JD schema, for the multi-role dashboard. | role name → JD-shaped dict |
 | `jd_intent.json` | `[1]` | The structured interpretation of the job description — the parsed JD that drives every scorer. | static data |
 
-### 2.2 Top-level scripts (`NextHire/`)
+### 2.2 Top-level scripts (repo root)
 
 - **`rank.py`** — the single end-to-end entrypoint
   (`python rank.py --candidates ./candidates.jsonl --out ./submission.csv`). It
@@ -159,14 +159,14 @@ are calibrated into presentable, strictly non-increasing values.
   re-ranker to ONNX with INT8 dynamic quantization (a documented CPU-speedup
   upgrade path; not required to run `rank.py`).
 
-### 2.3 Frozen artifacts (`NextHire/artifacts/`)
+### 2.3 Frozen artifacts (`artifacts/`)
 
 - `retriever.pkl.gz` — the frozen `PrecomputedRetriever` (shortlist + dense
   similarities) for the JD query.
 - `candidate_ids.pkl.gz` — the row-aligned candidate ids the index was built on,
   used to validate that the cache matches the live pool before it is trusted.
 
-### 2.4 The API backend (`NextHire/api/`)
+### 2.4 The API backend (`api/`)
 
 - **`main.py`** — the FastAPI app. Exposes `/api/roles`, `/api/rank`,
   `/api/stage` (chunked, memory-safe file upload), `/api/status`,
@@ -191,7 +191,7 @@ are calibrated into presentable, strictly non-increasing values.
   that persists each ranking run and its results; reads `.env` by walking up the
   directory tree.
 
-### 2.5 The web frontend (`NextHire/web/`)
+### 2.5 The web frontend (`web/`)
 
 A Next.js + Tailwind single-page dashboard. `app/page.tsx` is the controller:
 it manages upload → role selection → weight tuning → rank → poll → render, and

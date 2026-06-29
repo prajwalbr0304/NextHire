@@ -9,7 +9,7 @@
 #   docker build -f Dockerfile.web -t nexthire .
 #   docker run --rm -p 7860:7860 nexthire   # -> http://localhost:7860
 #
-# Build context MUST be the NextHire/ directory.
+# Build context MUST be the repo root.
 # ---------------------------------------------------------------------------
 
 # ----- Stage 1: build the Next.js frontend into a static bundle (web/out) ----

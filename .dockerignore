@@ -1,6 +1,11 @@
 # Keep the ranking-reproduction image lean and deterministic.
 .git
 .gitignore
+.env
+.env.local
+.github
+README.md
+*.md
 **/__pycache__
 *.pyc
 .pytest_cache

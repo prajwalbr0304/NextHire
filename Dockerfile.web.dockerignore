@@ -3,6 +3,8 @@
 # web/package-lock.json — so we only drop build artifacts and junk here.
 .git
 .gitignore
+.env
+.env.local
 **/__pycache__
 **/*.pyc
 .pytest_cache
