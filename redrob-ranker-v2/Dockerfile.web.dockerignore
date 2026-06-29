@@ -1,0 +1,33 @@
+# Build-context ignore for Dockerfile.web (BuildKit uses this instead of the
+# default .dockerignore). Unlike the rank image, the web build NEEDS web/ and
+# web/package-lock.json — so we only drop build artifacts and junk here.
+.git
+.gitignore
+**/__pycache__
+**/*.pyc
+.pytest_cache
+.venv
+venv
+.streamlit
+
+# Frontend build artifacts (regenerated inside the image)
+web/node_modules
+web/.next
+web/out
+web_out
+
+# Large organiser data is never baked in (the small *.json sample IS kept)
+*.jsonl
+candidates.jsonl
+candidates.jsonl.gz
+
+# Misc outputs / docs not needed at runtime
+*.pdf
+submission*.csv
+ranked_output.csv
+ui_explained.html
+screenshots/
+compliance/audit_trail
+_api.out.log
+_api.err.log
+deploy/

@@ -263,3 +263,17 @@ def nextai_status():
 def nextai_chat(req: ChatRequest):
     context = ranker.nextai_context(top=25)
     return nextai.chat(req.question, req.history or [], context)
+
+
+# ---------------------------------------------------------------------------
+# Static frontend (production / single-container deployment)
+# ---------------------------------------------------------------------------
+# When the Next.js app has been statically exported to ``web_out/`` (done in
+# Dockerfile.web), serve it from FastAPI so the entire app runs as ONE process
+# on ONE port. Mounted LAST so every /api/* route above keeps precedence. In
+# local dev this directory does not exist, so nothing changes.
+_WEB_OUT = os.path.join(REPO_ROOT, "web_out")
+if os.path.isdir(_WEB_OUT):
+    from fastapi.staticfiles import StaticFiles
+
+    app.mount("/", StaticFiles(directory=_WEB_OUT, html=True), name="web")

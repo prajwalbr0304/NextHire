@@ -1,0 +1,68 @@
+# syntax=docker/dockerfile:1
+# ---------------------------------------------------------------------------
+# NextHire — full web app (Next.js UI + FastAPI backend) in ONE container.
+#
+# The Next.js dashboard is built as a static export and served by FastAPI, so
+# the whole app runs as a single process on a single public port (7860). This
+# is the image deployed to HuggingFace Spaces and published to GHCR.
+#
+#   docker build -f Dockerfile.web -t nexthire .
+#   docker run --rm -p 7860:7860 nexthire   # -> http://localhost:7860
+#
+# Build context MUST be the redrob-ranker-v2/ directory.
+# ---------------------------------------------------------------------------
+
+# ----- Stage 1: build the Next.js frontend into a static bundle (web/out) ----
+FROM node:20-bookworm-slim AS web
+WORKDIR /web
+COPY web/package.json web/package-lock.json ./
+RUN npm ci
+COPY web/ ./
+ENV NEXT_TELEMETRY_DISABLED=1 \
+    NEXT_OUTPUT=export
+RUN npm run build
+
+# ----- Stage 2: Python runtime that serves the API + the static frontend -----
+FROM python:3.13-slim-bookworm AS runtime
+
+LABEL org.opencontainers.image.title="NextHire — AI Recruiting Brain" \
+      org.opencontainers.image.description="Next.js + FastAPI app over the Council-of-Nine candidate ranking engine." \
+      org.opencontainers.image.source="https://github.com/prajwalbr0304/AI-RECRUITING"
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    HF_HUB_OFFLINE=1 \
+    TRANSFORMERS_OFFLINE=1 \
+    TOKENIZERS_PARALLELISM=false \
+    REDROB_EMBED_BACKEND=lsa \
+    REDROB_CANDIDATES=/app/sample_candidates.json \
+    REDROB_UPLOAD_DIR=/tmp/redrob_uploads \
+    HOME=/home/appuser \
+    PORT=7860
+
+WORKDIR /app
+
+# Python deps first (cached across code changes).
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+# App: the ranking engine + API + a bundled demo pool so it ranks out-of-the-box.
+COPY api ./api
+COPY src ./src
+COPY artifacts ./artifacts
+COPY sample_candidates.json ./
+
+# The statically-exported Next.js dashboard (served by FastAPI at "/").
+COPY --from=web /web/out ./web_out
+
+# Run as a non-root user (HuggingFace Spaces runs containers as uid 1000).
+RUN useradd -m -u 1000 appuser \
+ && mkdir -p /tmp/redrob_uploads \
+ && chown -R appuser:appuser /app /home/appuser /tmp/redrob_uploads
+USER appuser
+
+EXPOSE 7860
+
+# Single process: FastAPI serves /api/* AND the exported SPA on the public port.
+CMD ["sh", "-c", "uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-7860}"]
